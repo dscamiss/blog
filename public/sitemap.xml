@@ -1,1 +1,18 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml"><url><loc>baseurl.com/categories/</loc></url><url><loc>baseurl.com/</loc></url><url><loc>baseurl.com/tags/</loc></url></urlset>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>http://localhost:56951/</loc>
+    <lastmod>2024-08-08T10:25:20-07:00</lastmod>
+  </url><url>
+    <loc>http://localhost:56951/posts/softmax-derivatives/</loc>
+    <lastmod>2024-08-08T10:25:20-07:00</lastmod>
+  </url><url>
+    <loc>http://localhost:56951/posts/</loc>
+    <lastmod>2024-08-08T10:25:20-07:00</lastmod>
+  </url><url>
+    <loc>http://localhost:56951/categories/</loc>
+  </url><url>
+    <loc>http://localhost:56951/tags/</loc>
+  </url>
+</urlset>
