@@ -1,7 +1,7 @@
 +++
 title = 'Higher-order total derivatives of softmax'
 date = 2024-08-08T10:25:20-07:00
-draft = true
+draft = false
 +++
 
 $$
