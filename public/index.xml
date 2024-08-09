@@ -2,18 +2,20 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
     <title>dscamiss</title>
-    <link>http://localhost:56951/</link>
+    <link>http://localhost:51661/</link>
     <description>Recent content on dscamiss</description>
-    <generator>Hugo -- 0.131.0</generator>
+    <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Thu, 08 Aug 2024 10:25:20 -0700</lastBuildDate>
-    <atom:link href="http://localhost:56951/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Thu, 08 Aug 2024 10:25:20 -0700</lastBuildDate><atom:link href="http://localhost:51661/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>Higher-order derivatives of softmax</title>
-      <link>http://localhost:56951/posts/softmax-derivatives/</link>
+      <title>Higher-order total derivatives of softmax</title>
+      <link>http://localhost:51661/posts/softmax-derivatives/</link>
       <pubDate>Thu, 08 Aug 2024 10:25:20 -0700</pubDate>
-      <guid>http://localhost:56951/posts/softmax-derivatives/</guid>
-      <description>Testing \(latex\) and $$\int_0^1 f(x) fx$$ </description>
+      
+      <guid>http://localhost:51661/posts/softmax-derivatives/</guid>
+      <description>$$ \newcommand{\bR}{\mathbb{R}} \newcommand{\Diag}{\Delta} \newcommand{\Exp}{\mathrm{Exp}} \definecolor{magicmint}{rgb}{0.67, 0.94, 0.82} \definecolor{timberwolf}{rgb}{0.86, 0.84, 0.82} \definecolor{lesserbox}{rgb}{0.85, 0.95, 1.0} $$ In this post, we will compute the second-order and third-order total derivatives of the softmax map. At some point, I thought that the higher-order derivatives could be used to cheaply compute approximations of the softmax map, but that&amp;rsquo;s a story for another post.
+Softmax To get started, recall that the softmax map \(\sigma : \bR^n \to \bR^n\) sends \(x\) to $$ \sigma(x) = \begin{bmatrix} \displaystyle \frac{\exp(x^1)}{\sum_{i=1}^{n} \exp(x^i)} \\ \vdots \\ \displaystyle \frac{\exp(x^n)}{\sum_{i=1}^{n} \exp(x^i)} \end{bmatrix}, $$ where \(x^i\) is the \(i\)th component of \(x\).</description>
     </item>
+    
   </channel>
 </rss>
