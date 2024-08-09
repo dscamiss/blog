@@ -119,10 +119,10 @@ $$
 which implies that the Jacobian matrix of \(\sigma\) at \(x\) is
 $$
 \colorbox{lesserbox}{
-    $J\sigma(x) = \Diag \sigma(x) - \sigma(x) \sigma(x)^t$
+    $J\sigma(x) = \Diag \sigma(x) - \sigma(x) \sigma(x)^t$.
 }
 $$
-where \(\Delta : \bR^n \to \bR^{n \times n}\) sends \(x\) to the diagonal
+Here, \(\Delta : \bR^n \to \bR^{n \times n}\) sends \(x\) to the diagonal
 matrix whose \((i,i)\)th entry is \(x^i\).
 
 ### Second-order total derivative
@@ -136,10 +136,9 @@ Using the expression for \(d\sigma(x)\) from the previous section, we obtain
 $$
 \begin{align*}
     d^2 \sigma(x) \cdot (h_1, h_2)
-    &=
-    (d\sigma(x) \cdot h_2) \odot h_1 -
-    \langle d\sigma(x) \cdot h_2, h_1 \rangle \sigma(x) -
-    \langle \sigma(x), h_1 \rangle d\sigma(x) \cdot h_2.
+    &= (d\sigma(x) \cdot h_2) \odot h_1 \\
+    &\qquad - \, \langle d\sigma(x) \cdot h_2, h_1 \rangle \sigma(x) \\
+    &\qquad - \, \langle \sigma(x), h_1 \rangle d\sigma(x) \cdot h_2.
 \end{align*}
 $$
 The first term on the right-hand side is
@@ -161,7 +160,7 @@ $$
     \langle \sigma(x), h_1 \rangle \langle \sigma(x), h_2 \rangle \sigma(x).
 \end{align*}
 $$
-Similarly, the third term is
+Finally, the third term is
 $$
 \begin{align*}
     - \langle \sigma(x), h_1 \rangle d\sigma(x) \cdot h_2
@@ -220,7 +219,7 @@ $$
 The second term is
 $$
 \begin{align*}
-    - \langle \sigma(x) \odot h_3, h_2 \rangle \sigma(x) \odot h_1
+    - \langle \sigma(x), h_2 \odot h_3 \rangle \sigma(x) \odot h_1
     + \langle \sigma(x), h_2 \rangle \langle \sigma(x), h_3 \rangle \sigma(x) \odot h_1.
 \end{align*}
 $$
@@ -236,7 +235,7 @@ $$
 The fourth term is
 $$
 \begin{align*}
-    - \langle \sigma(x) \odot h_3, h_1 \rangle \sigma(x) \odot h_2
+    - \langle \sigma(x), h_1 \odot h_3 \rangle \sigma(x) \odot h_2
     + \langle \sigma(x), h_1 \rangle \langle \sigma(x), h_3 \rangle \sigma(x) \odot h_2.
 \end{align*}
 $$
@@ -252,7 +251,7 @@ $$
 The sixth term is
 $$
 \begin{align*}
-    - \langle \sigma(x) \odot h_3, h_1 \odot h_2 \rangle \sigma(x)
+    - \langle \sigma(x), h_1 \odot h_2 \odot h_3 \rangle \sigma(x)
     + \langle \sigma(x), h_3 \rangle \langle \sigma(x), h_1 \odot h_2 \rangle \sigma(x).
 \end{align*}
 $$
@@ -268,18 +267,18 @@ $$
 The eighth term is
 $$
 \begin{align*}
-    2 \langle \sigma(x) \odot h_3, h_1 \rangle \langle \sigma(x), h_2 \rangle \sigma(x)
+    2 \langle \sigma(x), h_1 \odot h_3 \rangle \langle \sigma(x), h_2 \rangle \sigma(x)
     - 2 \langle \sigma(x), h_1 \rangle \langle \sigma(x), h_2 \rangle \langle \sigma(x), h_3 \rangle \sigma(x).
 \end{align*}
 $$
 The ninth term is
 $$
 \begin{align*}
-    2 \langle \sigma(x), h_1 \rangle \langle \sigma(x) \odot h_3, h_2 \rangle \sigma(x)
+    2 \langle \sigma(x), h_1 \rangle \langle \sigma(x), h_2 \odot h_3 \rangle \sigma(x)
     - 2 \langle \sigma(x), h_1 \rangle \langle \sigma(x), h_2 \rangle \langle \sigma(x), h_3 \rangle \sigma(x).
 \end{align*}
 $$
-The tenth term is
+Finally, the tenth term is
 $$
 \begin{align*}
     2 \langle \sigma(x), h_1 \rangle \langle \sigma(x), h_2 \rangle
@@ -373,7 +372,7 @@ $$
     \begin{align*}
         d^3 \sigma(x) \cdot (h, h, h)
         &= \sigma(x) \odot h \odot h \odot h
-        - 6 \langle \sigma(x), h \rangle \langle \sigma(x), h \rangle \sigma(x) \odot h \\
+        + 6 \langle \sigma(x), h \rangle \langle \sigma(x), h \rangle \sigma(x) \odot h \\
         &\qquad - \, 3 \langle \sigma(x), h \rangle \sigma(x) \odot h \odot h
         - 3 \langle \sigma(x), h \odot h \rangle \sigma(x) \odot h \\
         &\qquad - \, \langle \sigma(x), h \odot h \odot h \rangle \sigma(x)
@@ -392,7 +391,7 @@ $$
         &\qquad - \, \frac{1}{2} \, \langle \sigma(x), h \odot h \rangle \sigma(x)
         + \langle \sigma(x), h \rangle \langle \sigma(x), h \rangle \sigma(x) \\
         &\qquad + \, \frac{1}{6} \sigma(x) \odot h \odot h \odot h
-        - \langle \sigma(x), h \rangle \langle \sigma(x), h \rangle \sigma(x) \odot h \\
+        + \langle \sigma(x), h \rangle \langle \sigma(x), h \rangle \sigma(x) \odot h \\
         &\qquad - \, \frac{1}{2} \langle \sigma(x), h \rangle \sigma(x) \odot h \odot h
         - \frac{1}{2} \langle \sigma(x), h \odot h \rangle \sigma(x) \odot h \\
         &\qquad - \, \frac{1}{6} \langle \sigma(x), h \odot h \odot h \rangle \sigma(x)
