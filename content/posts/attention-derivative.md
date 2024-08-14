@@ -1,7 +1,7 @@
 +++
 title = 'Modified attention maps with simpler total derivatives'
 date = 2024-08-09T13:27:04-07:00
-draft = true
+draft = false
 tag = ['attention', 'backpropagation', 'random-notes']
 +++
 
