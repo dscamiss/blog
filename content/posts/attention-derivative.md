@@ -226,9 +226,9 @@ $$
     \beta(x) = \frac{x}{1 + \| x \|},
 \end{align*}
 $$
-we build on the [`nanoGPT`](https://github.com/karpathy/nanoGPT "nanoGPT hosted on GitHub")
+we can build on the [`nanoGPT`](https://github.com/karpathy/nanoGPT "nanoGPT hosted on GitHub")
 project.  In a nutshell, we need to implement \(\beta\), disable flash attention, and
-adjust the causal masking logic to accommodate \(\beta\).
+adjust the causal masking to accommodate \(\beta\).
 
 The `nn.Module` that implements \(\beta\) is very straightforward:
 ```
