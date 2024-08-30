@@ -21,14 +21,14 @@ with piecewise-linear activation functions.  We assume that the
 optimization scheme is mini-batch gradient descent.
 
 The focus on piecewise-linear activation functions is motivated by two things:
-First, such activation functions are widely used in practice (for example, ReLU).
-Second, such activation functions lead to simpler second-order partial derivatives
+First, such activation functions are widely used in practice (for example, standard
+ReLU and leaky ReLU). Second, such activation functions lead to simpler second-order partial derivatives
 of the loss function, and these partial derivatives are needed to compute the optimal learning rates.
 
 ## Optimal learning rates in gradient descent
 
 Consider a smooth function \(f : \Theta \to \bR\),
-where \(\Theta\) is a finite-dimensional normed vector space.
+where \(\Theta\) is a finite-dimensional vector space.
 Gradient descent attempts to minimize \(f\) by iterating on
 $$
     \theta \leftarrow \theta - \alpha df(\theta)^*.
@@ -51,7 +51,7 @@ $$
     g(\alpha) = \theta - \alpha df(\theta)^*.
 $$
 
-Our assumption is that \(f\) is equal to its second-order Taylor series expansion at \(\theta\):
+Now assume that \(f\) is equal to its second-order Taylor series expansion at \(\theta\):
 $$
     f(\theta + h)
     = f(\theta) + df(\theta) \cdot h + \frac{1}{2} d^2 f(\theta) \cdot (h, h).
@@ -384,7 +384,7 @@ $$
     = 0.
 \end{align*}
 $$
-The other third-order partial derivatives are similar.
+Similarly, the other third-order partial derivatives are also identically equal to \(0\).
 
 Plugging in the adjoints, we obtain
 $$
@@ -419,7 +419,7 @@ $$
     \rangle.
 \end{align*}
 $$
-Combining terms (including a dummy index swap), the denominator of \(\alpha_*(\theta)\) is
+Combining terms (and making a dummy index swap), the denominator of \(\alpha_*(\theta)\) is
 $$
 \colorbox{lesserbox}
 {
@@ -437,7 +437,7 @@ $
 $
 }
 $$
-The optimal learning rate for \(\sL\) at \(\theta\) is
+Putting everything together, the optimal learning rate for \(\sL\) at \(\theta\) is
 $$
 \colorbox{magicmint}
 {
@@ -476,7 +476,7 @@ $
 $
 }
 $$
-Further, if the activation function is (standard) ReLU, then clearly
+Further, if the activation function is standard ReLU, then clearly
 $$
 \Delta'(z_{1,1}) \Delta'(z_{1,1}) = \Delta'(z_{1,1})
 $$
