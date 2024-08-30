@@ -5,15 +5,15 @@ theme = 'PaperMod'
 
 [params]
   math = true
-  defaultTheme = 'auto'
+  defaultTheme = 'light'
 
 [menus]
   [[menus.main]]
-    name    = 'Home'
+    name    = 'home'
     pageRef = '/'
     weight  = 1
   [[menus.main]]
-    name    = 'About'
+    name    = 'about'
     pageRef = '/about'
     weight  = 2
 
