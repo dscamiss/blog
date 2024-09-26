@@ -1,5 +1,5 @@
 +++
-title = 'An explicit formula for the gradient of standard attention'
+title = 'An explicit formula for the gradient of the standard attention map'
 date = 2024-09-19T11:03:04-07:00
 draft = true
 tag = ['attention', 'gradient', 'backpropagation', 'random-notes']
@@ -13,6 +13,15 @@ $$
     \definecolor{lesserbox}{rgb}{0.85, 0.95, 1.0}
     \definecolor{magicmint}{rgb}{0.67, 0.94, 0.82}
 $$
+
+## Introduction
+
+In this post, we derive an explicit formula for the gradient of the
+standard attention map.  Then, we numerically verify the formula's
+correctness and profile the execution
+times of the "explicit" gradient and the autograd gradient.
+
+## Gradients
 
 We begin by defining the *parameter space* to be
 $$
@@ -35,18 +44,10 @@ $$
     &= \sum_{i=1}^{n} e_i \sigma(K Q^t e_i)^t V,
 \end{align*}
 $$
-where \(e_i\) is the \(i\)th Euclidean basis vector in \(\bR^n\).
-
-The total derivative of \(\Attn\) at \(\theta\) is
-$$
-\begin{align*}
-    d \Attn(\theta) \cdot \tilde{\theta} =
-    d_Q \Attn(\theta) \cdot \tilde{Q} +
-    d_K \Attn(\theta) \cdot \tilde{K} +
-    d_V \Attn(\theta) \cdot \tilde{V},
-\end{align*}
-$$
-where \(\tilde{\theta} = (\tilde{Q},\tilde{K},\tilde{V})\).
+where \(e_i\) is the \(i\)-th Euclidean basis vector in \(\bR^n\).  The
+"extra" transposes are needed to ensure that the inputs to \(\sigma\)
+are column vectors, and the outputs of \(\sigma\) are row vectors.  For
+notational convenience, we have chosen not to include the standard scaling factor \(1/\sqrt{d}\).
 
 By the chain rule, the partial derivatives of \(\Attn\) are
 $$
@@ -88,7 +89,7 @@ $$
 \end{align*}
 $$
 where \(\langle \cdot, \cdot \rangle_F\) is the Frobenius inner product on \(\bR^{n \times d}\)
-and \(\tr(\cdot)\) is trace.
+and \(\tr(\cdot)\) is trace.  This shows that
 $$
     d_Q \Attn(\theta)^* \cdot P = \sum_{i=1}^{n} e_i e_i^t P V^t d \sigma(p_i) K.
 $$
@@ -99,13 +100,12 @@ $$
     &= \left\langle d_Q \sL(\theta) \cdot \tilde{Q}, 1 \right\rangle_\bR \\
     &= \left\langle d \ell(\Attn(\theta)) \cdot d_Q \Attn(\theta) \cdot \tilde{Q}, 1 \right\rangle_\bR \\
     &= \left\langle \tilde{Q}, d_Q \Attn(\theta)^* \circ d \ell(\Attn(\theta))^* \cdot 1 \right\rangle_F \\
-    &= \left\langle \tilde{Q}, \sum_{i=1}^{n} e_i e_i^t (d \ell(\Attn(\theta))^* \cdot 1) V^t d \sigma(p_i) K \right\rangle_F \\
     &= \left\langle \tilde{Q}, \sum_{i=1}^{n} e_i e_i^t \Lambda(\theta) V^t d \sigma(p_i) K \right\rangle_F,
 \end{align*}
 $$
 where we have introduced the shorthand
 $$
-    \Lambda(\theta) = d \ell(\Attn(\theta))^* \cdot 1.
+    \Lambda(\theta) = d \ell(\Attn(\theta))^* \cdot 1 \equiv d \ell(\Attn(\theta)) \in \bR^{n \times d}.
 $$
 Thus we can [make the identification](https://en.wikipedia.org/wiki/Riesz_representation_theorem)
 $$
@@ -126,12 +126,11 @@ $$
     &= \left\langle \tilde{K}, \sum_{i=1}^{n} d\sigma(p_i)^t V P^t e_i e_i^t Q \right\rangle_F.
 \end{align*}
 $$
-Using this result, we obtain
+This shows that
 $$
-    d_K \sL(\theta) \cdot \tilde{K} =
-    \left\langle \tilde{K}, \sum_{i=1}^{n} d\sigma(p_i)^t V \Lambda(\theta)^t e_i e_i^t Q \right\rangle_F.
+    d_K \Attn(\theta)^* \cdot P = \sum_{i=1}^{n} d \sigma(p_i)^t V P^t e_i e_i^t Q.
 $$
-As above, we can make the identification
+As above, using this result we can make the identification
 $$
     d_K \sL(\theta) \equiv \sum_{i=1}^{n} d\sigma(p_i)^t V \Lambda(\theta)^t e_i e_i^t Q.
 $$
@@ -146,14 +145,11 @@ $$
     &= \left\langle \tilde{V}, \sum_{i=1}^{n} \sigma(p_i) e_i^t P \right\rangle_F.
 \end{align*}
 $$
-Using this result, we obtain
+This shows that
 $$
-\begin{align*}
-    d_V \sL(\theta) \cdot \tilde{V}
-    &= \left\langle \tilde{V}, \sum_{i=1}^{n} \sigma(p_i) e_i^t \Lambda(\theta) \right\rangle_F.
-\end{align*}
+    d_V \Attn(\theta)^* \cdot P = \sum_{i=1}^{n} \sigma(p_i) e_i^t P.
 $$
-Once again, we can make the identification
+Once again, using this result we can make the identification
 $$
     d_V \sL(\theta) \equiv \sum_{i=1}^{n} \sigma(p_i) e_i^t \Lambda(\theta).
 $$
@@ -180,7 +176,7 @@ $
 $
 }
 $$
-To be completely explicit, note that we can write \(\Omega(\Theta)\) in "matrix form" as
+To be more explicit, note that we can write \(\Omega(\theta)\) in "matrix form" as
 $$
     \Omega(\theta) =
     \begin{bmatrix}
@@ -189,7 +185,7 @@ $$
     e_n^t \Lambda(\theta) V^t d \sigma(p_n)
     \end{bmatrix}.
 $$
-Expanding each \(d\sigma(p_i)\), this becomes
+Expanding each \(d\sigma(p_i)\) as in [this post](), we obtain
 $$
     \Omega(\theta) =
     \begin{bmatrix}
@@ -198,9 +194,125 @@ $$
     e_n^t \Lambda(\theta) V^t (\Delta \sigma(p_n) - \sigma(p_n) \sigma(p_n)^t)
     \end{bmatrix}.
 $$
-For details concerning the computation of each \(d\sigma(p_i)\), see [this post]().
 
-_Side note_: How smart are autograd implementations?  Do they recognize that
-we can re-use the value of \(\Omega(\theta)\) in the computation of
-\(d \sL(\theta)\)?
+## Example
 
+As a simple example, suppose that \(\ell(\theta) = e_j^t \theta \epsilon_k\),
+where \(\epsilon_k\) is the \(k\)-th Euclidean basis vector in \(\bR^d\).
+In other words, \(\ell(\theta)\) is the \((j,k)\)-th component of \(\theta\).  Then
+$$
+    \Lambda(\theta) \equiv e_j \epsilon_k^t.
+$$
+It follows that
+$$
+\begin{align*}
+    \Omega(\theta)
+    &= e_j \epsilon_k^t V^t d \sigma(p_j)
+\end{align*}
+$$
+and
+$$
+\begin{align*}
+    d \sL(\theta) \equiv
+    \left(
+    e_j \epsilon_k^t V^t d \sigma(p_j) K,
+    d \sigma(p_j)^t V \epsilon_k e_j^t Q,
+    \sigma(p_j) \epsilon_k^t
+    \right).
+\end{align*}
+$$
+
+## Verification
+
+For verification, we can implement \(\Attn\) as a `torch.autograd.Function`, as follows:
+
+```python
+class Attention(torch.autograd.Function):
+    """Standard attention map."""
+
+    @staticmethod
+    def forward(ctx: FunctionCtx, theta: Float[Tensor, "n 3d"]) -> Float[Tensor, "n d"]:
+        """Compute attention map output.
+
+        Args:
+            ctx (FunctionCtx): Context used to stash data for backward().
+            theta (Tensor): Input tensor of shape (n, 3d); theta = [Q, K, V].
+
+        Note:
+            We omit the standard scaling by 1/sqrt(d).
+        """
+        d = theta.shape[-1] // 3
+        q, k, v = theta.split(d, dim=-1)
+        s = torch.softmax(q @ k.transpose(-1, -2), dim=-1)
+        ctx.save_for_backward(q, k, v, s)
+        return s @ v
+
+    @staticmethod
+    def backward(  # type: ignore[override]
+        ctx: FunctionCtx, grad_output: Float[Tensor, "n d"]
+    ) -> Float[Tensor, "n 3d"]:
+        """Compute gradient of attention map.
+
+        Args:
+            ctx (FunctionCtx): Context used to retrieve stashed data from forward().
+            grad_output (Tensor): Gradient tensor of shape (n, 3d).
+        """
+        q, k, v, s = ctx.saved_tensors  # type: ignore[attr-defined]
+        n, d = q.shape
+        v_transpose = v.transpose(-1, -2)
+
+        # Compute "omega" matrix, row-by-row
+        omega = torch.zeros(n, n, dtype=torch.double)
+        for i in range(n):
+            s_row = s[i, :].unsqueeze(0)
+            s_col = s_row.transpose(-1, -2)
+            dsigma = torch.diag(s_col.squeeze()) - (s_col @ s_row)
+            omega[i, :] = grad_output[i, :].unsqueeze(0) @ v_transpose @ dsigma
+
+        # Compute "Q" component
+        q_comp = omega @ k
+
+        # Compute "K" component
+        k_comp = omega.transpose(-1, -2) @ q
+
+        # Compute "V" component
+        v_comp = torch.zeros(n, d, dtype=torch.double)
+        for i in range(n):
+            s_col = s[i, :].unsqueeze(0).transpose(-1, -2)
+            v_comp += s_col @ grad_output[i, :].unsqueeze(0)
+
+        # Gradient concatenates all components
+        return torch.cat((q_comp, k_comp, v_comp), dim=-1)
+```
+
+Then we can compare numerical to analytical gradients, using `gradcheck`:
+
+```python
+def check_attention_gradient() -> None:
+    """Verify Attention.backward(), using gradcheck()."""
+    n, d = 8, 16
+
+    q = torch.randn(n, d, dtype=torch.double, requires_grad=True)
+    k = torch.randn(n, d, dtype=torch.double, requires_grad=True)
+    v = torch.randn(n, d, dtype=torch.double, requires_grad=True)
+
+    theta = torch.cat((q, k, v), dim=-1)
+
+    if gradcheck(Attention.apply, theta, eps=1e-6, atol=1e-4):
+        print(emoji.emojize(":sparkles: success!"))
+    else:
+        print(emoji.emojize(":broken_heart: failure..."))
+
+
+if __name__ == "__main__":
+    check_attention_gradient()
+```
+
+The results are...
+
+```console
+$ python attention_gradient.py
+✨ success!
+```
+
+## Execution times
