@@ -292,7 +292,7 @@ class Attention(Function):
         return torch.cat((q_comp, k_comp, v_comp), dim=-1)
 ```
 
-Then we can compare numerical to analytical gradients, using `gradcheck`:
+Then we can compare numerical to analytical gradients, using `gradcheck()`:
 
 ```python
 def check_attention_gradient() -> None:
