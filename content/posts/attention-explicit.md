@@ -1,7 +1,7 @@
 +++
 title = 'An explicit formula for the gradient of the standard attention map'
 date = 2024-09-19T11:03:04-07:00
-draft = true
+draft = false
 tag = ['attention', 'gradient', 'backpropagation', 'random-notes']
 +++
 
@@ -18,8 +18,7 @@ $$
 
 In this post, we derive an explicit formula for the gradient of the
 standard attention map.  Then, we numerically verify the formula's
-correctness and profile the execution
-times of the "explicit" gradient and the autograd gradient.
+correctness using `gradcheck()`.
 
 ## Gradients
 
@@ -227,7 +226,15 @@ $$
 For verification, we can implement \(\Attn\) as a `torch.autograd.Function`, as follows:
 
 ```python
-class Attention(torch.autograd.Function):
+import emoji
+import torch
+from jaxtyping import Float
+from torch import Tensor
+from torch.autograd import Function, gradcheck
+from torch.autograd.function import FunctionCtx
+
+
+class Attention(Function):
     """Standard attention map."""
 
     @staticmethod
@@ -314,5 +321,3 @@ The results are...
 $ python attention_gradient.py
 ✨ success!
 ```
-
-## Execution times
