@@ -6,6 +6,19 @@ theme = 'PaperMod'
 [params]
   math = true
   defaultTheme = 'light'
+  [params.homeInfoParams]
+    Title = 'Hi there!'
+    Content = "This is Scott's blog, mostly about the mathematics of machine learning..."
+  [[params.socialIcons]]
+    name = 'email'
+    url = 'mailto:dscamiss@gmail.com'
+  [[params.socialIcons]]
+    name = 'github'
+    url = 'https://github.com/dscamiss'
+  [[params.socialIcons]]
+    name = "linkedin"
+    url = 'https://www.linkedin.com/in/scottamiss/'
+  favicon = true
 
 [menus]
   [[menus.main]]

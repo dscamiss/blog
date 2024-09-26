@@ -5,6 +5,14 @@ draft = false
 tag = ['attention', 'gradient', 'backpropagation', 'random-notes']
 +++
 
+## Introduction
+
+In this post, we derive an explicit formula for the gradient of the
+standard attention map.  Then, we numerically verify the formula's
+correctness using `gradcheck()`.
+
+<!--more-->
+
 $$
     \newcommand{\Attn}{\mathrm{Att}}
     \newcommand{\bR}{\mathbb{R}}
@@ -13,12 +21,6 @@ $$
     \definecolor{lesserbox}{rgb}{0.85, 0.95, 1.0}
     \definecolor{magicmint}{rgb}{0.67, 0.94, 0.82}
 $$
-
-## Introduction
-
-In this post, we derive an explicit formula for the gradient of the
-standard attention map.  Then, we numerically verify the formula's
-correctness using `gradcheck()`.
 
 ## Gradients
 

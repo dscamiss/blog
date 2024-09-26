@@ -6,11 +6,11 @@ summary: "Information about me."
 ---
 
 I defended my Ph.D. in 2013, which was a deep-dive
-into a particular [motion planning algorithm for non-linear systems](https://qspace.library.queensu.ca/server/api/core/bitstreams/3c186bc7-cb13-4b1c-b3b1-b5f74f1877fa/content).
+into [motion planning for non-linear systems](https://qspace.library.queensu.ca/server/api/core/bitstreams/3c186bc7-cb13-4b1c-b3b1-b5f74f1877fa/content).
 
-After grad school, I started in the storage device industry,
-where I worked on data science-type problems related to disk drive manufacturing.  In 2022, I moved
-to Apple's Special Projects Group, to work on the [ill-fated Apple Car
+After grad school, I went to [Western Digital](https://www.wdc.com/),
+where I worked on data science problems related to disk drive manufacturing.
+In 2022, I moved to Apple's Special Projects Group (SPG) to work on the [Apple Car
 project](https://en.wikipedia.org/wiki/Apple_car_project).
 
 Want to hire me or get the conversation going?  Please reach out via
