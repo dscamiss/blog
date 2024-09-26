@@ -5,14 +5,6 @@ draft = false
 tag = ['fully-connected', 'learning-rate', 'random-notes']
 +++
 
-$$
-    \newcommand{\bR}{\mathbb{R}}
-    \newcommand{\sL}{\mathscr{L}}
-    \newcommand{\tr}{\mathrm{trace}}
-    \definecolor{lesserbox}{rgb}{0.85, 0.95, 1.0}
-    \definecolor{magicmint}{rgb}{0.67, 0.94, 0.82}
-$$
-
 In this post, we explicitly compute the optimal learning rates
 for a special class of fully-connected neural networks.
 
@@ -24,6 +16,16 @@ The focus on piecewise-linear activation functions is motivated by two things:
 First, such activation functions are widely used in practice (for example, standard
 ReLU and leaky ReLU). Second, such activation functions lead to simpler second-order partial derivatives
 of the loss function, and these partial derivatives are needed to compute the optimal learning rates.
+
+<!--more-->
+
+$$
+    \newcommand{\bR}{\mathbb{R}}
+    \newcommand{\sL}{\mathscr{L}}
+    \newcommand{\tr}{\mathrm{trace}}
+    \definecolor{lesserbox}{rgb}{0.85, 0.95, 1.0}
+    \definecolor{magicmint}{rgb}{0.67, 0.94, 0.82}
+$$
 
 ## Optimal learning rates in gradient descent
 

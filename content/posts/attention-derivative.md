@@ -5,16 +5,18 @@ draft = false
 tag = ['attention', 'backpropagation', 'random-notes']
 +++
 
-$$
-    \newcommand{\Attn}{\mathrm{Att}}
-    \newcommand{\bR}{\mathbb{R}}
-$$
-
 In this post, we show that a modified attention map, which
 has softmax replaced by a different normalizing map,
 has a simpler total derivative.  The goal is to improve
 the computational efficiency of backpropagation through
 attention-type maps.
+
+<!--more-->
+
+$$
+    \newcommand{\Attn}{\mathrm{Att}}
+    \newcommand{\bR}{\mathbb{R}}
+$$
 
 ## Standard attention
 

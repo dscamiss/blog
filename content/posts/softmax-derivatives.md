@@ -4,19 +4,20 @@ date = 2024-08-08T10:25:20-07:00
 draft = false
 +++
 
+In this post, we will compute the second-order and third-order total derivatives of
+the softmax map.  At some point, I thought that the higher-order derivatives
+could be used to cheaply compute approximations of the softmax map, but that's
+a story for another post.
+
+<!--more-->
+
 $$
     \newcommand{\bR}{\mathbb{R}}
     \newcommand{\Diag}{\Delta}
     \newcommand{\Exp}{\mathrm{Exp}}
     \definecolor{magicmint}{rgb}{0.67, 0.94, 0.82}
-    \definecolor{timberwolf}{rgb}{0.86, 0.84, 0.82}
     \definecolor{lesserbox}{rgb}{0.85, 0.95, 1.0}
 $$
-
-In this post, we will compute the second-order and third-order total derivatives of
-the softmax map.  At some point, I thought that the higher-order derivatives
-could be used to cheaply compute approximations of the softmax map, but that's
-a story for another post.
 
 ## Softmax
 

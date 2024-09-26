@@ -186,7 +186,8 @@ $$
     e_n^t \Lambda(\theta) V^t d \sigma(p_n)
     \end{bmatrix}.
 $$
-Expanding each \(d\sigma(p_i)\) as in [this post](), we obtain
+Expanding each \(d\sigma(p_i)\) as in [this post]({{<ref "posts/softmax-derivatives">}}),
+we obtain
 $$
     \Omega(\theta) =
     \begin{bmatrix}
