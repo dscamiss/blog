@@ -1,5 +1,5 @@
 +++
-title = 'An explicit formula for the gradient of the standard attention map'
+title = 'An explicit formula for the gradient of scaled dot-product attention'
 date = 2024-09-19T11:03:04-07:00
 draft = false
 tag = ['attention', 'gradient', 'backpropagation', 'random-notes']
@@ -8,8 +8,8 @@ tag = ['attention', 'gradient', 'backpropagation', 'random-notes']
 ## Introduction
 
 In this post, we derive an explicit formula for the gradient of the
-standard attention map.  Then, we numerically verify the formula's
-correctness using `gradcheck()`.
+scaled dot-product attention map.  Then, we numerically verify the formula's
+correctness using PyTorch's `gradcheck()` function.
 
 <!--more-->
 
@@ -24,31 +24,33 @@ $$
 
 ## Gradients
 
-We begin by defining the *parameter space* to be
+We begin by defining
 $$
     \Theta = \bR^{n \times d} \times \bR^{n \times d} \times \bR^{n \times d}
 $$
 with generic element \(\theta = (Q, K, V)\).
 
-The *standard attention map* is defined by
+The *dot-product attention map* is defined by
 $$
 \begin{align*}
     \Attn : \Theta &\to \bR^{n \times d} \\
-    (Q, K, V) &\mapsto \Attn(Q, K, V) = \sigma(QK^t) V,
+    \theta &\mapsto \Attn(\theta) = \sigma(QK^t) V,
 \end{align*}
 $$
 where \(\sigma : \bR^n \to \bR^n\) is the [softmax map]({{< ref "softmax-derivatives" >}})
 applied row-wise.  This means that
 $$
 \begin{align*}
-    \Attn(Q, K, V) &= \sum_{i=1}^{n} e_i \sigma((e_i^t Q K^t)^t)^t V \\
+    \Attn(\theta) &= \sum_{i=1}^{n} e_i \sigma((e_i^t Q K^t)^t)^t V \\
     &= \sum_{i=1}^{n} e_i \sigma(K Q^t e_i)^t V,
 \end{align*}
 $$
 where \(e_i\) is the \(i\)-th Euclidean basis vector in \(\bR^n\).  The
 "extra" transposes are needed to ensure that the inputs to \(\sigma\)
 are column vectors, and the outputs of \(\sigma\) are row vectors.  For
-notational convenience, we have chosen not to include the standard scaling factor \(1/\sqrt{d}\).
+notational convenience, we have chosen not to include the standard scaling
+factor \(1/\sqrt{d}\) applied to \(QK^t\).  The "scaled" case is discussed
+further below.
 
 By the chain rule, the partial derivatives of \(\Attn\) are
 $$
@@ -224,36 +226,64 @@ $$
 \end{align*}
 $$
 
+## Scaled dot-product attention
+
+For completeness, the *scaled dot-product attention map* is defined by
+$$
+\begin{align*}
+    \Attn : \Theta &\to \bR^{n \times d} \\
+    \theta &\mapsto \Attn(\theta) = \sigma\left(\frac{QK^t}{\sqrt{d}}\right) V.
+\end{align*}
+$$
+In this case, we have the identification
+$$
+\colorbox{magicmint}
+{
+$
+    d \sL(\theta) \equiv
+    \left(
+    \frac{\Omega(\theta) K}{\sqrt{d}},
+    \frac{\Omega(\theta)^t Q}{\sqrt{d}},
+    \sum_{i=1}^{n} \sigma(p_i) e_i^t \Lambda(\theta)
+    \right) \in \Theta.
+$
+}
+$$
+
 ## Verification
 
 For verification, we can implement \(\Attn\) as a `torch.autograd.Function`, as follows:
 
 ```python
-import emoji
+import math
+
 import torch
 from jaxtyping import Float
 from torch import Tensor
-from torch.autograd import Function, gradcheck
+from torch.autograd import Function
 from torch.autograd.function import FunctionCtx
 
 
 class Attention(Function):
-    """Standard attention map."""
+    """Scaled dot-product attention map."""
 
     @staticmethod
     def forward(ctx: FunctionCtx, theta: Float[Tensor, "n 3d"]) -> Float[Tensor, "n d"]:
-        """Compute attention map output.
+        """Compute scaled dot-product attention map output.
 
         Args:
-            ctx (FunctionCtx): Context used to stash data for backward().
-            theta (Tensor): Input tensor of shape (n, 3d); theta = [Q, K, V].
+            ctx (FunctionCtx): Context used to stash data for `backward()`.
+            theta (Tensor): Input tensor of shape `(n, 3d)`; `theta = [Q, K, V]`.
 
-        Note:
-            We omit the standard scaling by 1/sqrt(d).
+        Raises:
+            ValueError: If the shape of `theta` is invalid (it is not a 2-dimensional
+                tensor or its last dimension is not divisible by 3).
         """
+        if theta.dim() != 2 or theta.shape[-1] % 3 != 0:
+            raise ValueError(f"theta has invalid shape {theta.shape}")
         d = theta.shape[-1] // 3
         q, k, v = theta.split(d, dim=-1)
-        s = torch.softmax(q @ k.transpose(-1, -2), dim=-1)
+        s = torch.softmax(q @ k.transpose(-1, -2) / math.sqrt(d), dim=-1)
         ctx.save_for_backward(q, k, v, s)
         return s @ v
 
@@ -261,11 +291,11 @@ class Attention(Function):
     def backward(  # type: ignore[override]
         ctx: FunctionCtx, grad_output: Float[Tensor, "n d"]
     ) -> Float[Tensor, "n 3d"]:
-        """Compute gradient of attention map.
+        """Compute gradient of scaled dot-product attention map.
 
         Args:
-            ctx (FunctionCtx): Context used to retrieve stashed data from forward().
-            grad_output (Tensor): Gradient tensor of shape (n, 3d).
+            ctx (FunctionCtx): Context used to retrieve stashed data from `forward()`.
+            grad_output (Tensor): Gradient tensor of shape `(n, 3d)`.
         """
         q, k, v, s = ctx.saved_tensors  # type: ignore[attr-defined]
         n, d = q.shape
@@ -278,6 +308,9 @@ class Attention(Function):
             s_col = s_row.transpose(-1, -2)
             dsigma = torch.diag(s_col.squeeze()) - (s_col @ s_row)
             omega[i, :] = grad_output[i, :].unsqueeze(0) @ v_transpose @ dsigma
+
+        # Incorporate scaling factor
+        omega = (1.0 / math.sqrt(d)) * omega
 
         # Compute "Q" component
         q_comp = omega @ k
@@ -298,8 +331,14 @@ class Attention(Function):
 Then we can compare numerical to analytical gradients, using `gradcheck()`:
 
 ```python
-def check_attention_gradient() -> None:
-    """Verify Attention.backward(), using gradcheck()."""
+import torch
+from torch.autograd import gradcheck
+
+from attention import Attention
+
+
+def test_attention_gradient() -> None:
+    """Check correctness of `Attention.backward()` using `gradcheck()`."""
     n, d = 8, 16
 
     q = torch.randn(n, d, dtype=torch.double, requires_grad=True)
@@ -309,18 +348,16 @@ def check_attention_gradient() -> None:
     theta = torch.cat((q, k, v), dim=-1)
 
     if gradcheck(Attention.apply, theta, eps=1e-6, atol=1e-4):
-        print(emoji.emojize(":sparkles: success!"))
+        print("success!")
     else:
-        print(emoji.emojize(":broken_heart: failure..."))
-
-
-if __name__ == "__main__":
-    check_attention_gradient()
+        print("failure...")
 ```
 
 The results are...
 
 ```console
-$ python attention_gradient.py
-✨ success!
+$ python -m pytest .
+success!
 ```
+
+This code is hosted on GitHub [here](https://github.com/dscamiss/attention-gradient/).
