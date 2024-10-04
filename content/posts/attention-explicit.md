@@ -47,10 +47,11 @@ $$
 $$
 where \(e_i\) is the \(i\)-th Euclidean basis vector in \(\bR^n\).  The
 "extra" transposes are needed to ensure that the inputs to \(\sigma\)
-are column vectors, and the outputs of \(\sigma\) are row vectors.  For
-notational convenience, we have chosen not to include the standard scaling
-factor \(1/\sqrt{d}\) applied to \(QK^t\).  The "scaled" case is discussed
-further below.
+are column vectors, and the outputs of \(\sigma\) are row vectors.
+For notational convenience, we have chosen not to include the standard scaling
+factor \(1/\sqrt{d}\) applied to \(QK^t\); the "scaled" case is discussed
+further below.  Also, we have elected to have the dimensions
+of \(Q, K, V\) match, although this is not strictly necessary.
 
 By the chain rule, the partial derivatives of \(\Attn\) are
 $$
