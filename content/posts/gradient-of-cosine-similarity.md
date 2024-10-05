@@ -1,7 +1,7 @@
 +++
 title = 'The gradient of cosine similarity'
 date = 2024-10-04T12:36:14-07:00
-draft = true
+draft = false
 tag = ['cosine-similarity', 'gradient', 'random-notes']
 +++
 
