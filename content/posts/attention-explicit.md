@@ -22,13 +22,22 @@ $$
     \definecolor{magicmint}{rgb}{0.67, 0.94, 0.82}
 $$
 
-## Gradients
+## Dot-product attention
 
 We begin by defining
 $$
     \Theta = \bR^{n \times d} \times \bR^{n \times d} \times \bR^{n \times d}
 $$
 with generic element \(\theta = (Q, K, V)\).
+
+We regard \(\Theta\) as an inner product space with the inner product
+$$
+    \langle (Q_1, K_1, V_1), (Q_2, K_2, V_2) \rangle_\Theta =
+    \langle Q_1, Q_2 \rangle_F +
+    \langle K_1, K_2 \rangle_F +
+    \langle V_1, V_2 \rangle_F.
+$$
+Here, \(\langle A, B \rangle_F = \tr(A^t B)\) is the Frobenius inner product on \(\bR^{n \times d}\).
 
 The *dot-product attention map* is defined by
 $$
@@ -51,21 +60,9 @@ are column vectors, and the outputs of \(\sigma\) are row vectors.
 For notational convenience, we have chosen not to include the standard scaling
 factor \(1/\sqrt{d}\) applied to \(QK^t\); the "scaled" case is discussed
 further below.  Also, we have elected to have the dimensions
-of \(Q, K, V\) match, although this is not strictly necessary.
+of \(Q, K\) and \(V\) match, since this is typical in applications.
 
-By the chain rule, the partial derivatives of \(\Attn\) are
-$$
-\begin{align*}
-    d_Q \Attn(\theta) \cdot \tilde{Q}
-    &= \sum_{i=1}^{n} e_i [d \sigma(p_i) \cdot K\tilde{Q}^t e_i]^t V \\
-    d_K \Attn(\theta) \cdot \tilde{K}
-    &= \sum_{i=1}^{n} e_i [d \sigma(p_i) \cdot \tilde{K}Q^t e_i]^t V \\
-    d_V \Attn(\theta) \cdot \tilde{V}
-    &= \sum_{i=1}^{n} e_i \sigma(p_i)^t \tilde{V},
-\end{align*}
-$$
-where we have introduced the shorthand \(p_i = K Q^t e_i\).  Here, \(d \sigma(x)\) denotes the total derivative of
-\(\sigma\) at \(x\), which we identify with the Jacobian matrix of \(\sigma\) at \(x\).
+## Gradient
 
 Recall that the notion of "gradient" is only well-defined for smooth
 functions (i.e., smooth real-valued maps).  In particular, the "gradient" of \(\Attn\) is
@@ -78,8 +75,61 @@ $$
     \sL = \ell \circ \Attn.
 \end{align*}
 $$
+We will make use of the following quantities:
+* \(\nabla \sL(\theta)\): The (total) gradient of \(\sL\) at \(\theta\).
+* \(d \sL(\theta)\): The total derivative of \(\sL\) at \(\theta\).
+* \(\nabla_\square \sL(\theta)\): The partial gradient of \(\sL\) at \(\theta\) with respect to \(\square \in \{Q, K, V\}\).
+* \(d_\square \sL(\theta)\): The partial derivative of \(\sL\) at \(\theta\) with respect to \(\square \in \{Q, K, V\}\).
 
-To compute \(d_Q \sL(\theta)\), observe that
+Recall that \(\nabla \sL(\theta)\) is the unique element of \(\Theta\) that satisfies
+$$
+\begin{align*}
+    d\sL(\theta) \cdot (\tilde{Q}, \tilde{K}, \tilde{V}) =
+    \langle (\tilde{Q}, \tilde{K}, \tilde{V}), \nabla \sL(\theta) \rangle_\Theta.
+\end{align*}
+$$
+Similarly, \(\nabla_\square \sL(\theta)\) is the unique element of \(\bR^{n \times d}\) that satisfies
+$$
+\begin{align*}
+    d_\square \sL(\theta) \cdot \tilde{\square} =
+    \langle \tilde{\square}, \nabla_\square \sL(\theta) \rangle_F.
+\end{align*}
+$$
+The (total) gradient and partial gradients are related by
+$$
+    \nabla \sL(\theta) = (\nabla_Q \sL(\theta), \nabla_K \sL(\theta), \nabla_V \sL(\theta)).
+$$
+To compute the (total) gradient, we will now compute the partial gradients.
+
+## Partial gradient with respect to \(Q\)
+
+To compute \(\nabla_Q \sL(\theta)\), first observe that
+$$
+\begin{align*}
+    d_Q \sL(\theta) \cdot \tilde{Q}
+    &= \left\langle d_Q \sL(\theta) \cdot \tilde{Q}, 1 \right\rangle_\bR \\
+    &= \left\langle d \ell(\Attn(\theta)) \cdot d_Q \Attn(\theta) \cdot \tilde{Q}, 1 \right\rangle_\bR \\
+    &= \left\langle \tilde{Q}, d_Q \Attn(\theta)^* \circ d \ell(\Attn(\theta))^* \cdot 1 \right\rangle_F \\
+    &= \left\langle \tilde{Q}, d_Q \Attn(\theta)^* \cdot \nabla \ell(\Attn(\theta)) \right\rangle_F \\
+    &= \left\langle \tilde{Q}, d_Q \Attn(\theta)^* \cdot \Lambda(\theta) \right\rangle_F,
+\end{align*}
+$$
+where \(d_Q \Attn(\theta)\) is the partial derivative of \(\Attn\) at \(\theta\)
+with respect \(Q\), the superscript \(*\) denote adjoint, and
+$$
+    \Lambda(\theta) = \nabla \ell(\Attn(\theta)) \in \bR^{n \times d}.
+$$
+By the chain rule,
+$$
+\begin{align*}
+    d_Q \Attn(\theta) \cdot \tilde{Q}
+    &= \sum_{i=1}^{n} e_i [d \sigma(p_i) \cdot K\tilde{Q}^t e_i]^t V.
+\end{align*}
+$$
+Here we have introduced the shorthand \(p_i = K Q^t e_i\). Also, \(d \sigma(x)\) denotes the total derivative of
+\(\sigma\) at \(x\), which we identify with the Jacobian matrix of \(\sigma\) at \(x\).
+
+To evaluate the adjoint \(d_Q \Attn(\theta)^*\), compute
 $$
 \begin{align*}
     \left\langle d_Q \Attn(\theta) \cdot \tilde{Q}, P \right\rangle_F
@@ -89,34 +139,43 @@ $$
     &= \sum_{i=1}^{n} \tr\left( V^t d \sigma(p_i) K \tilde{Q}^t e_i e_i^t P \right) \\
     &= \sum_{i=1}^{n} \tr\left( \tilde{Q}^t e_i e_i^t P V^t d \sigma(p_i) K \right) &\color{gray}\mbox{(Cyclic invariance)} \\
     &= \sum_{i=1}^{n} \left\langle \tilde{Q}, e_i e_i^t P V^t d \sigma(p_i) K \right\rangle_F \\
-    &= \left\langle \tilde{Q}, \sum_{i=1}^{n} e_i e_i^t P V^t d \sigma(p_i) K \right\rangle_F,
+    &= \left\langle \tilde{Q}, \sum_{i=1}^{n} e_i e_i^t P V^t d \sigma(p_i) K \right\rangle_F.
 \end{align*}
 $$
-where \(\langle \cdot, \cdot \rangle_F\) is the Frobenius inner product on \(\bR^{n \times d}\)
-and \(\tr(\cdot)\) is trace.  This shows that
+We have shown that
 $$
-    d_Q \Attn(\theta)^* \cdot P = \sum_{i=1}^{n} e_i e_i^t P V^t d \sigma(p_i) K.
+    d_Q \Attn(\theta)^* \cdot P = \sum_{i=1}^{n} e_i e_i^t P V^t d \sigma(p_i) K
 $$
-Using this result, we obtain
+and consequently
 $$
-\begin{align*}
-    d_Q \sL(\theta) \cdot \tilde{Q}
-    &= \left\langle d_Q \sL(\theta) \cdot \tilde{Q}, 1 \right\rangle_\bR \\
-    &= \left\langle d \ell(\Attn(\theta)) \cdot d_Q \Attn(\theta) \cdot \tilde{Q}, 1 \right\rangle_\bR \\
-    &= \left\langle \tilde{Q}, d_Q \Attn(\theta)^* \circ d \ell(\Attn(\theta))^* \cdot 1 \right\rangle_F \\
-    &= \left\langle \tilde{Q}, \sum_{i=1}^{n} e_i e_i^t \Lambda(\theta) V^t d \sigma(p_i) K \right\rangle_F,
-\end{align*}
-$$
-where we have introduced the shorthand
-$$
-    \Lambda(\theta) = d \ell(\Attn(\theta))^* \cdot 1 \equiv d \ell(\Attn(\theta)) \in \bR^{n \times d}.
-$$
-Thus we can [make the identification](https://en.wikipedia.org/wiki/Riesz_representation_theorem)
-$$
-    d_Q \sL(\theta) \equiv \sum_{i=1}^{n} e_i e_i^t \Lambda(\theta) V^t d \sigma(p_i) K.
+\colorbox{lesserbox}
+{
+$
+    \nabla_Q \sL(\theta) = \sum_{i=1}^{n} e_i e_i^t \Lambda(\theta) V^t d \sigma(p_i) K.
+$
+}
 $$
 
-To compute \(d_K \sL(\theta)\), we proceed in a similar way.  Observe that
+## Partial gradient with respect to \(K\)
+
+To compute \(\nabla_K \sL(\theta)\), first observe that
+$$
+\begin{align*}
+    d_K \sL(\theta) \cdot \tilde{K}
+    &= \left\langle \tilde{K}, d_K \Attn(\theta)^* \cdot \Lambda(\theta) \right\rangle_F,
+\end{align*}
+$$
+where \(d_K \Attn(\theta)\) is the partial derivative of \(\Attn\) at \(\theta\) with respect to \(K\).
+
+By the chain rule,
+$$
+\begin{align*}
+    d_K \Attn(\theta) \cdot \tilde{K}
+    &= \sum_{i=1}^{n} e_i [d \sigma(p_i) \cdot \tilde{K} Q^t e_i]^t V.
+\end{align*}
+$$
+
+To evaluate the adjoint \(d_K \Attn(\theta)^*\), compute
 $$
 \begin{align*}
     \left\langle d_K \Attn(\theta) \cdot \tilde{K}, P \right\rangle_F
@@ -130,16 +189,36 @@ $$
     &= \left\langle \tilde{K}, \sum_{i=1}^{n} d\sigma(p_i)^t V P^t e_i e_i^t Q \right\rangle_F.
 \end{align*}
 $$
-This shows that
+We have shown that
 $$
-    d_K \Attn(\theta)^* \cdot P = \sum_{i=1}^{n} d \sigma(p_i)^t V P^t e_i e_i^t Q.
+    d_K \Attn(\theta)^* \cdot P = \sum_{i=1}^{n} d \sigma(p_i)^t V P^t e_i e_i^t Q
 $$
-As above, using this result we can make the identification
+and consequently
 $$
-    d_K \sL(\theta) \equiv \sum_{i=1}^{n} d\sigma(p_i)^t V \Lambda(\theta)^t e_i e_i^t Q.
+\colorbox{lesserbox}
+{
+$
+    \nabla_K \sL(\theta) = \sum_{i=1}^{n} d\sigma(p_i)^t V \Lambda(\theta)^t e_i e_i^t Q.
+$
+}
 $$
 
-Finally, to compute \(d_V \sL(\theta)\), simply observe that
+## Partial gradient with respect to \(V\)
+
+To compute \(\nabla_V \sL(\theta)\), first observe that
+$$
+\begin{align*}
+    d_V \sL(\theta) \cdot \tilde{V}
+    &= \left\langle \tilde{V}, d_V \Attn(\theta)^* \cdot \Lambda(\theta) \right\rangle_F,
+\end{align*}
+$$
+where \(d_V \Attn(\theta)\) is the partial derivative of \(\Attn\) at \(\theta\) with respect to \(V\).
+
+Differentiating, we obtain
+$$
+    d_V \Attn(\theta) \cdot \tilde{V} = \sum_{i=1}^{n} e_i \sigma(p_i)^t \tilde{V}.
+$$
+To evaluate the adjoint \(d_V \Attn(\theta)^*\), compute
 $$
 \begin{align*}
     \left\langle d_V \Attn(\theta) \cdot \tilde{V}, P \right\rangle_F
@@ -149,25 +228,33 @@ $$
     &= \left\langle \tilde{V}, \sum_{i=1}^{n} \sigma(p_i) e_i^t P \right\rangle_F.
 \end{align*}
 $$
-This shows that
+We have shown that
 $$
-    d_V \Attn(\theta)^* \cdot P = \sum_{i=1}^{n} \sigma(p_i) e_i^t P.
+    d_V \Attn(\theta)^* \cdot P = \sum_{i=1}^{n} \sigma(p_i) e_i^t P
 $$
-Once again, using this result we can make the identification
+and consequently
 $$
-    d_V \sL(\theta) \equiv \sum_{i=1}^{n} \sigma(p_i) e_i^t \Lambda(\theta).
+\colorbox{lesserbox}
+{
+$
+    \nabla_V \sL(\theta) = \sum_{i=1}^{n} \sigma(p_i) e_i^t \Lambda(\theta).
+$
+}
 $$
-Putting everything together, we have the identification
+
+## Main result
+
+Putting everything together, we have
 $$
 \colorbox{magicmint}
 {
 $
-    d \sL(\theta) \equiv
+    \nabla \sL(\theta) =
     \left(
     \Omega(\theta) K,
     \Omega(\theta)^t Q,
     \sum_{i=1}^{n} \sigma(p_i) e_i^t \Lambda(\theta)
-    \right) \in \Theta,
+    \right),
 $
 }
 $$
@@ -206,7 +293,7 @@ As a simple example, suppose that \(\ell(\theta) = e_j^t \theta \epsilon_k\),
 where \(\epsilon_k\) is the \(k\)-th Euclidean basis vector in \(\bR^d\).
 In other words, \(\ell(\theta)\) is the \((j,k)\)-th component of \(\theta\).  Then
 $$
-    \Lambda(\theta) \equiv e_j \epsilon_k^t.
+    \Lambda(\theta) = e_j \epsilon_k^t.
 $$
 It follows that
 $$
@@ -218,7 +305,7 @@ $$
 and
 $$
 \begin{align*}
-    d \sL(\theta) \equiv
+    \nabla \sL(\theta) =
     \left(
     e_j \epsilon_k^t V^t d \sigma(p_j) K,
     d \sigma(p_j)^t V \epsilon_k e_j^t Q,
@@ -236,17 +323,17 @@ $$
     \theta &\mapsto \Attn(\theta) = \sigma\left(\frac{QK^t}{\sqrt{d}}\right) V.
 \end{align*}
 $$
-In this case, we have the identification
+In this case, we have
 $$
 \colorbox{magicmint}
 {
 $
-    d \sL(\theta) \equiv
+    \nabla \sL(\theta) =
     \left(
     \frac{\Omega(\theta) K}{\sqrt{d}},
     \frac{\Omega(\theta)^t Q}{\sqrt{d}},
     \sum_{i=1}^{n} \sigma(p_i) e_i^t \Lambda(\theta)
-    \right) \in \Theta.
+    \right).
 $
 }
 $$
