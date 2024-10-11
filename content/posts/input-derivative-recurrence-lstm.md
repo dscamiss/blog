@@ -9,7 +9,7 @@ draft = true
 The literature is full of claims that the LSTM architecture is well-adapted to learning input-output dependence
 over long time lags, and there is a large amount of empirical evidence supporting
 this claim.  Nevertheless, I couldn't find a proof of this claim, at least not in the form of
-a *direct analysis of input-output sensitivity*.  In this post,
+a direct analysis of input-output sensitivity.  In this post,
 we get the ball rolling on a direct analysis. First, we derive a recurrence
 relation which relates the input-output sensitivities over arbitrarily long time lags.
 Then, we use the recurrence relation to show that a particular arrangement of hidden states
@@ -39,7 +39,7 @@ $$
 
 We begin by defining the *parameter space* to be
 $$
-    \Theta = (\bR^{n_h \times n_x} \times \bR^{n_h \times n_y} \times \bR^{n_h})^4,
+    \Theta = (\bR^{n_y \times n_x} \times \bR^{n_y \times n_y} \times \bR^{n_y})^4,
 $$
 with generic element
 $$
@@ -55,26 +55,38 @@ $$
     o_t &= \sigma(W_o x_t + R_o y_{t-1} + b_o) \\
     c_t &= z_t \odot i_t + c_{t-1} \odot f_t \\
     y_t &= h(c_t) \odot o_t \\
-    y_0 &= 0_h,
+    y_0 &= 0,
 \end{align*}
 $$
-where \(g, h\) are \(\tanh\) and \(\sigma\) is the sigmoid function.
-
-To be clear, this definition means that each \(\square \in \{z_t, i_t, f_t, o_t, c_t, y_t\}\) is a map
+where \(g, h\) are \(\tanh\) and \(\sigma\) is the sigmoid function, and
+we adopt the convention that functions act componentwise on vectors.
+For example, if \(x = (x^1,\dots,x^n)\), then
 $$
-    \square : \Theta \times (\bR^{n_x})^t \to \bR^{n_h}
+\begin{align*}
+    g(x) &= (g(x^1), \dots, g(x^n))^\dagger \\
+    g'(x) &= (g'(x^1), \dots, g'(x^n))^\dagger.
+\end{align*}
+$$
+Other choices for \(g, h, \sigma\) are possible, but we will be using properties
+of these specific functions below, such as positivity and vanishing of derivatives
+at infinity.
+
+To be clear, the preceding definition means that each \(\square \in \{z_t, i_t, f_t, o_t, c_t, y_t\}\) is a map
+$$
+    \square : \Theta \times (\bR^{n_x})^t \to \bR^{n_y}
 $$
 defined in the natural way which retains causality (with respect to the input sequence).
 
-For example,
+For example, \(z_t\) is defined by
 $$
 \begin{align*}
     z_t(\theta, x_1, \dots, x_t)
-    &= g(W_z x_t + R_z y_{t-1}(\theta, x_1, \dots, x_{t-1}) + b_z).
+    &= g(W_z x_t + R_z y_{t-1}(\theta, x_1, \dots, x_{t-1}) + b_z),
 \end{align*}
 $$
+and the other maps are similar.
 
-To keep the notation under control, we introduce
+Following the notation of [1], we introduce
 $$
 \begin{align*}
     \olz_t &= W_z x_t + R_z y_{t-1} + b_z \\
@@ -85,14 +97,20 @@ $$
 $$
 As above, each \(\square \in \{\olz_t, \oli_t, \olf_t, \olo_t\}\) is a map
 $$
-    \square : \Theta \times (\bR^{n_x})^t \to \bR^{n_h}
+    \square : \Theta \times (\bR^{n_x})^t \to \bR^{n_y}
 $$
 defined in the natural way which retains causality.
 
 We say that:
 * \(z_t, i_t, f_t, o_t\) are the *hidden states* at time \(t\),
-* \(c_t\) is the *cell state* at time \(t\), and
+* \(c_t\) is the *cell state* at time \(t\),
+* \(x_t\) is the *input* at time \(t\), and
 * \(y_t\) is the *output* at time \(t\).
+
+As stated above, the goal is to understand the input-output sensitivity of the LSTM.
+We take the partial derivatives \(d_{x_s} y_t\) as our measurements of
+input-output sensitivity.  Due to coupling in the LSTM, evaluating these partial derivatives requires
+evaluating the partial derivatives of the hidden states and cell state.
 
 ## Hidden states
 
@@ -108,8 +126,8 @@ $$
     d_{x_s} o_s &= \Delta \sigma'(\olo_s) W_o.
 \end{align*}
 $$
-Here, \(\Delta x\) is the diagonal matrix whose \((j,j)\)th component is equal to
-\(x^j\), and the derivatives \(g', \sigma'\) are applied component-wise.
+Here, \(\Delta x\) is the diagonal matrix whose \((j, j)\)-th component
+is equal to \(x^j\).
 
 For example,
 $$
@@ -132,47 +150,6 @@ $$
 \end{align*}
 $$
 
-## Output
-
-In this section, we evaluate the partial derivatives \(d_{x_s} y_t\).
-
-TODO: \(d_{x_s} y_s\)???
-
-For \(s < t\), we have
-$$
-\begin{align*}
-    d_{x_s} y_t \cdot \tilde{x}
-    &= (\Delta h'(c_t) d_{x_s} c_t \cdot \tilde{x}) \odot o_t + h(c_t) \odot (d_{x_s} o_t \cdot \tilde{x}).
-\end{align*}
-$$
-Using the expression for \(d_{x_s} o_t\) from above, this becomes
-$$
-\begin{align*}
-    d_{x_s} y_t
-    &= \Delta h'(c_t) \Delta o_t d_{x_s} c_t + \Delta h(c_t) \Delta \sigma'(\olo_t) R_o d_{x_s} y_{t-1}.
-\end{align*}
-$$
-Equivalently,
-$$
-    d_{x_s} c_t =
-    \Delta h'(c_t)^{-1} \Delta o_t^{-1} d_{x_s} y_t - \Delta h'(c_t)^{-1}  \Delta o_t^{-1}
-    \Delta \sigma'(\olo_t) \Delta h(c_t) R_o d_{x_s} y_{t-1}.
-$$
-Here we have used \(h' > 0\) and \(\sigma > 0\) to invert
-\(\Delta h'(c_t)\) and \(\Delta o_t\), respectively.
-
-For notational convenience, set
-$$
-\begin{align*}
-    \sA_t &= \Delta h'(c_t) \Delta o_t \\
-    \sB_t &= \Delta \sigma'(\olo_t) \Delta h(c_t) R_o.
-\end{align*}
-$$
-Then we can write
-$$
-    d_{x_s} c_t = \sA_t^{-1} d_{x_s} y_t - \sA_t^{-1} \sB_t d_{x_s} y_{t-1}.
-$$
-
 ## Cell state
 
 In this section, we evaluate the partial derivatives \(d_{x_s} c_t\).
@@ -187,7 +164,8 @@ $$
 \end{align*}
 $$
 
-Using the expressions for \(d_{x_s} z_s\), \(d_{x_s} i_s\), and \(d_{x_s} f_s\) from above, this becomes
+Using the expressions for \(d_{x_s} z_s\), \(d_{x_s} i_s\), and \(d_{x_s} f_s\) from the previous section,
+this becomes
 $$
 \begin{align*}
     d_{x_s} c_s &= \sC^W_s,
@@ -207,7 +185,7 @@ $
 }
 $$
 
-For \(s < t\), we have
+Similarly, for \(s < t\), we have
 $$
 \begin{align*}
     d_{x_s} c_t \cdot \tilde{x}
@@ -217,7 +195,8 @@ $$
     c_{t-1} \odot (d_{x_s} f_t \cdot \tilde{x}).
 \end{align*}
 $$
-Using the expressions for \(d_{x_s} z_t\), \(d_{x_s} i_t\), \(d_{x_s} c_{t-1}\), and \(d_{x_s} f_s\) from above, this becomes
+Using the expressions for \(d_{x_s} z_t\), \(d_{x_s} i_t\), and \(d_{x_s} f_s\) from the previous
+section, this becomes
 $$
 \begin{align*}
     d_{x_s} c_t &= \sC^R_t d_{x_s} y_{t-1} + \Delta f_t d_{x_s} c_{t-1},
@@ -238,38 +217,92 @@ $
 }
 $$
 
-This gives a recurrence relation for \(d_{x_s} c_t\), whose general solution is
+This gives a recurrence relation for the \(d_{x_s} c_t\)'s, whose solution is
 $$
 \begin{align*}
     d_{x_s} c_t
     &= \left( \prod_{k=s+1}^{t} \Delta f_k \right) \sC^W_s + \sum_{j=s}^{t-1} \left( \prod_{k=j+2}^{t} \Delta f_k \right) \sC^R_{j+1} d_{x_s} y_j,
 \end{align*}
 $$
-where the matrix products are left-multiplicative and "empty" products are equal to \(I_{n_h}\).
-
+where the "empty" matrix products are equal to the identity matrix.  This can
+be proven by a straightforward induction argument.
 For example, when \(s = 1\) and \(t = 3\), we have
 $$
 \begin{align*}
     d_{x_1} c_3
     &= \sC^R_3 d_{x_1} y_2 + \Delta f_3 d_{x_1} c_2 \\
     &= \sC^R_3 d_{x_1} y_2 + \Delta f_3 [\sC^R_2 d_{x_1} y_1 + \Delta f_2 d_{x_1} c_1] \\
-    &= \sC^R_3 d_{x_1} y_2 + \Delta f_3 \sC^R_2 d_{x_1} y_1 + \Delta f_3 \Delta f_2 d_{x_1} c_1.
+    &= \sC^R_3 d_{x_1} y_2 + \Delta f_3 \sC^R_2 d_{x_1} y_1 + \Delta f_3 \Delta f_2 d_{x_1} c_1 \\
+    &= \Delta f_3 \Delta f_2 \sC^W_1 + \sC^R_3 d_{x_1} y_2 + \Delta f_3 \sC^R_2 d_{x_1} y_1.
 \end{align*}
 $$
 
-We can express the general solution more compactly by introducing
+We can express the solution more compactly by introducing
 $$
     \sF^{b}_a = \prod_{k=a}^{b} \Delta f_k,
 $$
 so that
 $$
+\colorbox{lesserbox}
+{
+$
+    \begin{align*}
+        d_{x_s} c_t
+        &= \sF^{t}_{s+1} \sC^W_s + \sum_{j=s}^{t-1} \sF^{t}_{j+2} \sC^R_{j+1} d_{x_s} y_{j}.
+    \end{align*}
+    \qquad (1)
+$
+}
+$$
+
+## Output
+
+In this section, we evaluate the partial derivatives \(d_{x_s} y_t\).
+
+For \(s = t\), we have
+$$
 \begin{align*}
-    d_{x_s} c_t
-    &= \sF^{t}_{s+1} \sC^W_s + \sum_{j=s}^{t-1} \sF^{t}_{j+2} \sC^R_{j+1} d_{x_s} y_{j}.
+    d_{x_s} y_s \cdot \tilde{x}
+    &= \Delta h'(c_s) \Delta o_s \sC^W_s + \Delta h(c_s) \Delta \sigma'(\olo_s) W_o.
 \end{align*}
 $$
 
-Using the expression for \(d_{x_s} c_t\) from above, we obtain
+For \(s < t\), we have
+$$
+\begin{align*}
+    d_{x_s} y_t \cdot \tilde{x}
+    &= (\Delta h'(c_t) d_{x_s} c_t \cdot \tilde{x}) \odot o_t + h(c_t) \odot (d_{x_s} o_t \cdot \tilde{x}).
+\end{align*}
+$$
+Using the expression for \(d_{x_s} o_t\) derived above, this becomes
+$$
+\begin{align*}
+    d_{x_s} y_t
+    &= \Delta h'(c_t) \Delta o_t d_{x_s} c_t + \Delta h(c_t) \Delta \sigma'(\olo_t) R_o d_{x_s} y_{t-1}.
+\end{align*}
+$$
+Equivalently,
+$$
+    d_{x_s} c_t =
+    (\Delta h'(c_t) \Delta o_t)^{-1} d_{x_s} y_t - (\Delta h'(c_t) \Delta o_t)^{-1}
+    \Delta \sigma'(\olo_t) \Delta h(c_t) R_o d_{x_s} y_{t-1}.
+$$
+Here we have used positivity of \(h'\) and \(\sigma\) to invert
+\(\Delta h'(c_t)\) and \(\Delta o_t\), respectively.
+
+For notational convenience, introduce
+$$
+\begin{align*}
+    \sA_t &= \Delta h'(c_t) \Delta o_t \\
+    \sB_t &= \Delta \sigma'(\olo_t) \Delta h(c_t) R_o.
+\end{align*}
+$$
+Then we can write
+$$
+    d_{x_s} c_t = \sA_t^{-1} d_{x_s} y_t - \sA_t^{-1} \sB_t d_{x_s} y_{t-1}.
+$$
+
+Together with \((1)\), this gives a recurrence relation for the \(d_{x_s} y_t\)'s:
 $$
 \colorbox{magicmint}
 {
@@ -282,7 +315,6 @@ $
 $
 }
 $$
-This gives a recurrence relation for the partial derivatives \(d_{x_s} y_t\).
 
 ## Preserving input sensitivity
 
@@ -453,3 +485,7 @@ $$
 \end{align*}
 $$
 and the conclusion follows.
+
+## References
+
+[1] K. Greff, R. K. Srivastava, J. Koutník, B. R. Steunebrink and J. Schmidhuber, "LSTM: A Search Space Odyssey," in IEEE Transactions on Neural Networks and Learning Systems, vol. 28, no. 10, pp. 2222--2232
