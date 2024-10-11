@@ -1,7 +1,7 @@
 +++
 title = 'Input-output sensitivity in LSTM networks'
 date = 2024-10-06T14:23:38-07:00
-draft = true
+draft = false
 +++
 
 ## Introduction
@@ -110,9 +110,11 @@ We say that:
 * \(y_t\) is the *output* at time \(t\).
 
 As stated above, the goal is to understand the input-output sensitivity of the LSTM.
-We take the partial derivatives \(d_{x_s} y_t\) as our measurements of
-input-output sensitivity.  Due to coupling in the LSTM, evaluating these partial derivatives requires
-evaluating the partial derivatives of the hidden states and cell state.
+We take the partial derivative norms \(\| d_{x_s} y_t \|\) as our scalar measurements of
+input-output sensitivity.
+Due to coupling in the LSTM, evaluating the partial derivatives
+\(d_{x_s} y_t\) requires evaluating the partial derivatives of the hidden states and cell state.
+This is carried out in the next two sections.
 
 ## Hidden states
 
@@ -375,9 +377,14 @@ $
 $$
 where \(\smin(A)\) is the minimum singular value of \(A\).
 
-## Extensions
+## Something to try
 
-
+We have seen that saturation is one pathway to preserving input-output
+sensitivity.  To encourage more possibilities for saturation, we could try
+$$
+    c_t = z_{1,t} \odot i_{1,t} \odot \cdots \odot z_{n,t} \odot i_{n,t} + c_{t-1} \odot f_t
+$$
+for \(n \geq 2\).
 
 ## References
 
