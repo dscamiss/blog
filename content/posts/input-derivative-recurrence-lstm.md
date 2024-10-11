@@ -31,6 +31,8 @@ $$
     \newcommand{\olo}{\overline{o}}
     \newcommand{\smin}{\sigma_{\min}}
     \newcommand{\smax}{\sigma_{\max}}
+    \newcommand{\bfone}{\bf{1}}
+    \newcommand{\bfzero}{\bf{0}}
     \definecolor{lesserbox}{rgb}{0.85, 0.95, 1.0}
     \definecolor{magicmint}{rgb}{0.67, 0.94, 0.82}
 $$
@@ -55,7 +57,7 @@ $$
     o_t &= \sigma(W_o x_t + R_o y_{t-1} + b_o) \\
     c_t &= z_t \odot i_t + c_{t-1} \odot f_t \\
     y_t &= h(c_t) \odot o_t \\
-    y_0 &= 0,
+    y_0 &= \bfzero,
 \end{align*}
 $$
 where \(g, h\) are \(\tanh\) and \(\sigma\) is the sigmoid function, and
@@ -311,32 +313,41 @@ $
         d_{x_s} y_t
         &= \sA_t \sF^{t}_{s+1} \sC^W_s + \sA_t \sum_{j=s}^{t-1} \sF^{t}_{j+2} \sC^R_{j+1} d_{x_s} y_{j}
         + \sB_t d_{x_s} y_{t-1}.
+        \qquad (2)
     \end{align*}
 $
 }
 $$
 
-## Preserving input sensitivity
+## Preserving input-output sensitivity
 
-In this section, we use the recurrence relation from the previous section to
-identify a particular arrangement of hidden states which maintains input sensitivity.
+In this section, we use the recurrence relation \((2)\) to
+identify a particular arrangement of hidden states which preserves input-output sensitivity.
 Note that we are not claiming that this arrangement is the *only* one that
-maintains input sensitivity, but it is perhaps the simplest one to identify.
+preserves input-output sensitivity, but it is arguably the simplest one to identify.
+
+We say that:
+* \(z_\tau\) is *saturated* if each of its components satisfies \(z_\tau^j \approx 1\) or \(z_\tau^j \approx -1\),
+* \(\square \in \{ i_\tau, f_\tau, o_\tau \}\) is *pos-saturated* if \(\square \approx \bfone\), and
+* \(\square \in \{ i_\tau, f_\tau, o_\tau \}\) is *neg-saturated* if \(\square \approx \bfzero\).
 
 Our assumptions in this section are:
-* \(f_\tau\) is saturated for \(s \leq \tau \leq t\),
-* \(z_s\) or \(i_s\) is saturated,
-* \(z_\tau\) or \(i_\tau\) are saturated for \(s + 2 \leq \tau \leq t\),
-* \(o_t\) is saturated, and
+* \(f_\tau\) is pos-saturated for \(s \leq \tau \leq t\),
+* \(i_s\) is neg-saturated **or** \(i_s\) is pos-saturated and \(z_s\) is saturated,
+* \(i_\tau\) is neg-saturated **or** \(i_\tau\) is pos-saturated and \(z_\tau\) is saturated, for \(s + 2 \leq \tau \leq t\),
+* \(o_t\) is pos-saturated, and
 * The minimum singular value of \(\Delta h'(c_t) \sC^R_{s+1}\) is greater than or equal to \(1\).
 
-The first assumption implies that each "\(\sF\)" term is the identity matrix, so
+For simplicity's sake, in the remainder of this section we will treat the saturation
+approximations as if they were equalities.
+
+The first assumption implies that each "\(\sF^b_a\)" term is the identity matrix, so
 $$
 \begin{align*}
     d_{x_s} y_t &= \sA_t \sC^W_s + \sA_t \sum_{j=s}^{t-1} \sC^R_{j+1} d_{x_s} y_{j} + \sB_t d_{x_s} y_{t-1}.
 \end{align*}
 $$
-The first three assumptions imply that \(\sC^W_s = 0\) and \(\sC^R_\tau = 0\) for \(s + 2 \leq \tau \leq t\), so
+The first three assumptions imply that \(\sC^W_s = \bfzero\) and \(\sC^R_\tau = \bfzero\) for \(s + 2 \leq \tau \leq t\), so
 $$
 \begin{align*}
     d_{x_s} y_t &= \sA_t \sC^R_{s+1} d_{x_s} y_s + \sB_t d_{x_s} y_{t-1}.
@@ -350,141 +361,23 @@ $$
 $$
 Finally, the fifth assumption implies that
 $$
-\begin{align*}
-    \| d_{x_s} y_t \|
-    \geq \| \Delta h'(c_t) \sC^R_{s+1} d_{x_s} y_s \|
-    \geq \smin(\Delta h'(c_t) \sC^R_{s+1}) \| d_{x_s} y_s \|
-    \geq \| d_{x_s} y_s \|,
-\end{align*}
-$$
-where \(\smin(A)\) is the minimum singular value of \(A\).
-
-## Maintaining single-step sensitivity with a closed forget gate
-
-In this section, we use the recurrence relation from the previous section
-to derive two conditions under which
-$$
-\begin{align*}
-    \| d_{x_s} y_t \| \geq \| d_{x_s} y_{t-1} \|.
-\end{align*}
-$$
-
-In this section, \(s < t\) and we assume that \(f_t = 0_{n_h}\).
-
-Using the result of the previous section, we have
-$$
-\begin{align*}
-    d_{x_s} y_t
-    &= (\sA_t \sC^R_{t} + \sB_t) d_{x_s} y_{t-1}.
-\end{align*}
-$$
-The operator norm lower bound is
-$$
-    \| d_{x_s} y_t \| \geq \smin(\sA_t \sC^R_t + \sB_t) \| d_{x_s} y_{t-1} \|
-$$
-Using standard results, the minimum singular value satisfies
-$$
-\begin{align*}
-    \smin(\sA_t \sC^R_{t} + \sB_t) \geq \smin(\sA_t \sC^R_t) - \smax(\sB_t) \\
-    \smin(\sA_t \sC^R_{t} + \sB_t) \geq \smin(\sB_t) - \smax(\sA_t \sC^R_t) \\
-\end{align*}
-$$
-
-**Case 1**: Maximum gap between \(\smin(\sA_t \sC^R_t) - \smax(\sB_t)\)
-
-* Want \(\sB_t = 0\)
-* Could have \(R_o\) but this is improbable
-* Instead, take \(\olo_t\) components large
-* This means \(o_t\) components equal 1
-
-We have
-$$
-    \sA_t \sC^R_t =
-    \Delta h'(c_t) \Delta g'(\olz_t) \Delta i_t R_z +
-    \Delta h'(c_t) \Delta z_t \Delta \sigma'(\oli_t) R_i.
-$$
-
-**Case 2**: Maximum gap between \(\smin(\sB_t) - \smax(\sA_t \sC^R_t)\)
-
-* Want \(\sA_t = 0\)
-* Instead, take \(\olo_t\) components large
-* This means \(o_t\) components equal 1
-
-----
-
-The idea should be this:
-* Case 1: Drive \(c_t\) large (check pos/neg makes a difference?), then \(\sA_t = 0\) and \(\sB_t = \Delta \sigma'(\olo_t) I_{\pm} R_o\)
-and
-
-$$
-    \smin(\Delta \sigma'(\olo_t) I_\pm R_o) = \smin(\Delta \sigma'(\olo_t) R_o)
-$$
-
-(But check this...)
-* Case 2: Drive \(\olo_t\) large and positive, then \(\sB_t = 0\) and \(\sA_t = \Delta h'(c_t)\)
-* Also, what's happening with \(\sA_t\) and \(\sB_t\) (in \(c_t,o_t\)) is independent of \(\sC^R_t\) (in \(z_t,i_t\)).
-
-----
-
-The next result is the "\(o_t\) is positively saturated" case.
-
-**Proposition 1**: Suppose that \(o_t = (1,\dots,1)^t\) and
-$$
-    \smin(\Delta h'(c_t)) \smin(\Delta g'(\olz_t) \Delta i_t R_z + \Delta z_t \Delta \sigma'(\oli_t) R_i) \geq 1.
-$$
-Then
-$$
 \colorbox{magicmint}
 {
 $
-    \| d_{x_s} y_t \| \geq \| d_{x_s} y_{t-1} \|.
+    \begin{align*}
+        \| d_{x_s} y_t \|
+        \geq \| \Delta h'(c_t) \sC^R_{s+1} d_{x_s} y_s \|
+        \geq \smin(\Delta h'(c_t) \sC^R_{s+1}) \| d_{x_s} y_s \|
+        \geq \| d_{x_s} y_s \|,
+    \end{align*}
 $
 }
 $$
+where \(\smin(A)\) is the minimum singular value of \(A\).
 
-**Proof** The first assumption implies that \(\Delta o_t = I_{n_h}\) and \(\Delta \sigma'(\olo_t) = 0_{n_h}\). Therefore
-$$
-\begin{align*}
-    \sA_t &= \Delta h'(c_t) \\
-    \sB_t &= 0_{n_h \times n_h}.
-\end{align*}
-$$
-Plugging into Bound 1 above, we have
-$$
-    \| d_{x_s} y_t \| \geq \smin(\Delta h'(c_t) \sC^R_t) \geq \smin(\Delta h'(c_t)) \smin(\sC^R_t).
-$$
-The second inequality uses invertibility of \(\Delta h'(c_t)\).  Finally, \(f_t = 0_{n_h}\)
-implies that
-$$
-    \Delta \sigma'(\olf_t) = 0_{n_h}
-$$
-and therefore
-$$
-    \sC^R_t = \Delta g'(\olz_t) \Delta i_t R_z + \Delta z_t \Delta \sigma'(\oli_t) R_i.
-$$
-This completes the proof. \(\blacksquare\)
+## Extensions
 
-The next result is the "\(c_t\) is saturated" case.
 
-**Proposition 2**: Suppose that
-* The norm of \(c_t\) is large, so that \(h(c_t) \in \{ (1,\dots,1)^t, (-1,\dots,-1)^t \}\), and
-* The minimum singular values of \(\Delta \sigma'(\olo_t)\) and \(R_o\) satisfy \(\smin(\Delta \sigma'(\olo_t)) \smin(R_o) \geq 1\).
-
-Then
-$$
-    \| d_{x_s} y_t \| \geq \| d_{x_s} y_{t-1} \|.
-$$
-
-**Proof**: Then \(h'(c_t) = 0_{n_h}\) and \(\sA_t = 0_{n_h \times n_h}\).
-Furthermore, \(\Delta h(c_t) \in \{ I_{n_h}, -I_{n_h} \}\) and we have
-\(\smin(\sB_t) = \smin(\Delta \sigma'(\olo_t) R_o)\).
-Since \(\Delta \sigma'(\olo_t)\) is invertible, we have
-$$
-\begin{align*}
-    \smin(\sB_t) \geq \smin(\Delta \sigma'(\olo_t)) \smin(R_o) \geq 1
-\end{align*}
-$$
-and the conclusion follows.
 
 ## References
 
