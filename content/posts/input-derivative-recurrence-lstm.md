@@ -355,10 +355,10 @@ $$
     d_{x_s} y_t &= \sA_t \sC^R_{s+1} d_{x_s} y_s + \sB_t d_{x_s} y_{t-1}.
 \end{align*}
 $$
-The fourth assumption implies that \(\sA_t = \Delta h'(c_t)\) and \(\sB_t = 0\), so
+The fourth assumption implies that \(\sA_t = \Delta h'(c_t)\) and \(\sB_t = \bfzero\), so
 $$
 \begin{align*}
-    d_{x_s} y_t &= \Delta h'(c_t) \sC^R_{s+1} d_{x_s} y_s
+    d_{x_s} y_t &= \Delta h'(c_t) \sC^R_{s+1} d_{x_s} y_s.
 \end{align*}
 $$
 Finally, the fifth assumption implies that
@@ -377,14 +377,50 @@ $
 $$
 where \(\smin(A)\) is the minimum singular value of \(A\).
 
-## Something to try
+## More possibilities for vanishing
 
-We have seen that saturation is one pathway to preserving input-output
-sensitivity.  To encourage more possibilities for saturation, we could try
+We have seen that saturation, and the subsequent vanishing of
+the matrices \(\sC^W_s\) and \(\sC^R_t\), is one pathway to preserving input-output
+sensitivity.  To encourage more possibilities for vanishing, we could use
 $$
-    c_t = z_{1,t} \odot i_{1,t} \odot \cdots \odot z_{n,t} \odot i_{n,t} + c_{t-1} \odot f_t
+    c_t = z_{t} \odot i_{1,t} \odot \cdots \odot i_{n,t} + c_{t-1} \odot f_t
 $$
 for \(n \geq 2\).
+
+For example, with \(n = 2\) we would arrive at
+$$
+\begin{align*}
+    \sC^W_s &=
+    \Delta g'(\olz_{1,s}) \Delta i_{1,s} \Delta i_{2,s} W_z \\
+    &\qquad + \, \Delta z_s \Delta \sigma'(\oli_{1,s}) \Delta i_{2,s} W_{1,i} \\
+    &\qquad + \, \Delta z_s \Delta i_{1,s} \sigma'(\oli_{2,s})  W_{2,i} \\
+    &\qquad + \, \Delta c_{s-1} \Delta \sigma'(\olf_s) W_f
+\end{align*}
+$$
+and
+$$
+\begin{align*}
+    \sC^R_t &=
+    \Delta g'(\olz_{1,t}) \Delta i_{1,t} \Delta i_{2,t} R_z \\
+    &\qquad + \, \Delta z_t \Delta \sigma'(\oli_{1,t}) \Delta i_{2,t} R_{1,i} \\
+    &\qquad + \, \Delta z_t \Delta i_{1,t} \sigma'(\oli_{2,t}) R_{2,i} \\
+    &\qquad + \, \Delta c_{t-1} \Delta \sigma'(\olf_t) R_f.
+\end{align*}
+$$
+This introduces "more possibility" for the vanishing of \(\sC^W_s\) and \(\sC^R_t\),
+in the sense that more conditions for vanishing can be identified in the \(n = 2\) case.
+These conditions are not a superset of the conditions in the \(n = 1\) case, though.
+
+For example, \(\sC^W_s\) vanishes if
+* \(f_s\) is pos-saturated and
+* \(i_{1,s}\) is neg-saturated.
+
+The same conclusion holds if
+* \(f_s\) is pos-saturated and
+* \(i_{2,s}\) is neg-saturated.
+
+There are also more complicated conditions with interplay between
+\(z_s\), \(i_{1,s}\), and \(i_{2,s}\).
 
 ## References
 
