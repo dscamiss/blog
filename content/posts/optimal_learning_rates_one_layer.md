@@ -33,16 +33,15 @@ Consider a smooth function \(f : \Theta \to \bR\),
 where \(\Theta\) is a finite-dimensional vector space.
 Gradient descent attempts to minimize \(f\) by iterating on
 $$
-    \theta \leftarrow \theta - \alpha df(\theta)^*.
+    \theta \leftarrow \theta - \alpha \nabla f(\theta).
 $$
 Here, \(\alpha \in \bR_{> 0}\) is a fixed *learning rate*,
-\(df(\theta)\) is the total derivative of \(f\) at \(\theta\),
-the superscript \(*\) denotes adjoint, and \(\theta\) is
-given a suitable initial value.
+\(\nabla f(\theta)\) is the gradient of \(f\) at \(\theta\),
+and \(\theta\) is given a suitable initial value.
 
 Suppose that \(\theta \in \Theta\) is fixed.  We want to choose \(\alpha\) such that
 $$
-    f(\theta - \alpha df(\theta)^*)
+    f(\theta - \alpha \nabla f(\theta))
 $$
 is minimized.  Equivalently, we want to minimize the composite function
 $$
@@ -50,7 +49,7 @@ $$
 $$
 where the map \(g : \bR_{> 0} \to \Theta\) is defined by
 $$
-    g(\alpha) = \theta - \alpha df(\theta)^*.
+    g(\alpha) = \theta - \alpha \nabla f(\theta).
 $$
 
 Now assume that \(f\) is equal to its second-order Taylor series expansion at \(\theta\):
@@ -58,27 +57,27 @@ $$
     f(\theta + h)
     = f(\theta) + df(\theta) \cdot h + \frac{1}{2} d^2 f(\theta) \cdot (h, h).
 $$
-Here, \(d^2 f(\theta)\) is the second-order total derivative of \(f\) at \(\theta\).
+Here, \(d f(\theta)\) and \(d^2 f(\theta)\) are the first-order and second-order total derivatives of \(f\) at \(\theta\).
 
 Under this assumption,
 $$
 \begin{align*}
     (f \circ g)(\alpha)
-    &= f(\theta) - \alpha df(\theta) \cdot df(\theta)^* +
-    \frac{\alpha^2}{2} d^2 f(\theta) \cdot (df(\theta)^*, df(\theta)^*).
+    &= f(\theta) - \alpha df(\theta) \cdot \nabla f(\theta) +
+    \frac{\alpha^2}{2} d^2 f(\theta) \cdot (\nabla f(\theta), \nabla f(\theta)).
 \end{align*}
 $$
 By differentiating both sides, we obtain
 $$
-    (f \circ g)'(\alpha) = -df(\theta) \cdot df(\theta)^* + \alpha d^2 f(\theta) \cdot (df(\theta)^*, df(\theta)^*)
+    (f \circ g)'(\alpha) = -df(\theta) \cdot \nabla f(\theta) + \alpha d^2 f(\theta) \cdot (\nabla f(\theta), \nabla f(\theta))
 $$
 and
 $$
-    (f \circ g)''(\alpha) = d^2 f(\theta) \cdot (df(\theta)^*, df(\theta)^*).
+    (f \circ g)''(\alpha) = d^2 f(\theta) \cdot (\nabla f(\theta), \nabla f(\theta)).
 $$
 From single-variable calculus, we know that if
 $$
-    d^2 f(\theta) \cdot (df(\theta)^*, df(\theta)^*) > 0,
+    d^2 f(\theta) \cdot (\nabla f(\theta), \nabla f(\theta)) > 0,
 $$
 then \(f \circ g\) is strictly convex on \(\bR_{> 0}\) and
 $$
@@ -86,15 +85,15 @@ $$
     \frac{\mathrm{num}(\theta)}{\mathrm{den}(\theta)}
     =
     \frac{
-        df(\theta) \cdot df(\theta)^*
+        df(\theta) \cdot \nabla f(\theta)
     }{
-        d^2 f(\theta) \cdot (df(\theta)^*, df(\theta)^*)
+        d^2 f(\theta) \cdot (\nabla f(\theta), \nabla f(\theta))
     }
 $$
 is its global minimizer.  We say that \(\alpha_*(\theta)\) is the
 *optimal learning rate for \(f\) at \(\theta\)*.
 
-As a special case, suppose that \(\Theta\) is a product space
+As a special case, suppose that \(\Theta\) is the product vector space
 $$
     \Theta = \Theta_1 \times \cdots \times \Theta_n
 $$
@@ -103,13 +102,13 @@ Then we can write
 $$
     \alpha_*(\theta) =
     \frac{
-        \sum_{i=1}^{n} d_{\theta_i} f(\theta) \cdot d_{\theta_i} f(\theta)^*
+        \sum_{i=1}^{n} d_{\theta_i} f(\theta) \cdot \nabla_{\theta_i} f(\theta)
     }{
-        \sum_{i,j=1}^{n} d^2_{\theta_i,\theta_j} f(\theta) \cdot (d_{\theta_i} f(\theta)^*, d_{\theta_j} f(\theta)^*)
+        \sum_{i,j=1}^{n} d^2_{\theta_i,\theta_j} f(\theta) \cdot (\nabla_{\theta_i} f(\theta), \nabla_{\theta_j} f(\theta))
     }.
 $$
-Here we have introduced the following notation for partial derivatives:
-* \(d_{\theta_i} f(\theta)\) is the partial derivative of \(f\) with respect to \(\theta_i\) at \(\theta\), and
+Here we have introduced the following notation:
+* \(\nabla_{\theta_i} f(\theta)\) is the partial gradient of \(f\) with respect to \(\theta_i\) at \(\theta\), and
 * \(d^2_{\theta_i,\theta_j} f(\theta)\) is the second-order partial derivative of \(f\) with respect to \((\theta_i,\theta_j)\) at \(\theta\).
 
 For \(k\)th-order partial derivatives, when \(i_1 = \cdots = i_k = i\) we will write
@@ -260,18 +259,18 @@ where
 $$
 \begin{align*}
     \mathrm{num}(\theta) &=
-        d_{W_1} \sL(\theta) \cdot d_{W_1} \sL(\theta)^* +
-        d_{b_1} \sL(\theta) \cdot d_{b_1} \sL(\theta)^* \\
+        d_{W_1} \sL(\theta) \cdot \nabla_{W_1} \sL(\theta) +
+        d_{b_1} \sL(\theta) \cdot \nabla_{b_1} \sL(\theta) \\
     \mathrm{den}(\theta) &=
-        d^2_{W_1} \sL(\theta) \cdot (d_{W_1} \sL(\theta)^*, d_{W_1} \sL(\theta)^*) \\
-        &\qquad + \, 2 d^2_{W_1,b_1} \sL(\theta) \cdot (d_{W_1} \sL(\theta)^*, d_{b_1} \sL(\theta)^*) \\
-        &\qquad + \, d^2_{b_1} \sL(\theta) \cdot (d_{b_1} \sL(\theta)^*, d_{b_1} \sL(\theta)^*).
+        d^2_{W_1} \sL(\theta) \cdot (\nabla_{W_1} \sL(\theta), \nabla_{W_1} \sL(\theta)) \\
+        &\qquad + \, 2 d^2_{W_1,b_1} \sL(\theta) \cdot (\nabla_{W_1} \sL(\theta), \nabla_{b_1} \sL(\theta)) \\
+        &\qquad + \, d^2_{b_1} \sL(\theta) \cdot (\nabla_{b_1} \sL(\theta), \nabla_{b_1} \sL(\theta)).
 \end{align*}
 $$
 Recall that for \(\alpha_*(\theta)\) to be "well-defined,"
 we must have \(\mathrm{den}(\theta) > 0\).
 
-To compute \(\alpha_*\), we start with the adjoints.  For convenience, we will use the shorthand
+To compute \(\alpha_*\), we start with the partial gradients.  For convenience, we set
 $$
 \colorbox{lesserbox}
 {
@@ -295,10 +294,10 @@ $$
 where \(\langle A, B \rangle_F = \tr(A^t B)\) is the Frobenius inner product.  This shows that
 $$
 \begin{align*}
-    d_{W_1} f(\theta, x_i)^* \cdot v = \Delta' (z_{1,i}) v x_i^t.
+    d_{W_1} f(\theta, x_i)^* \cdot v = \Delta' (z_{1,i}) v x_i^t,
 \end{align*}
 $$
-Using this observation, we obtain
+where the superscript "\(*\)" denotes adjoint.  Using this, we obtain
 $$
 \begin{align*}
     d_{W_1} \sL(\theta) \cdot W
@@ -311,29 +310,33 @@ $$
     \right\rangle_F.
 \end{align*}
 $$
-We can therefore [make the identification](https://en.wikipedia.org/wiki/Riesz_representation_theorem)
+Recalling that \(\nabla_{W_1} \sL(\theta)\) is the unique element of \(\bR^{n_1 \times n_0}\) satisfying
+$$
+    d_{W_1} \sL(\theta) \cdot W = \left\langle W, \nabla_{W_1} \sL(\theta) \right\rangle_F,
+$$
+we have
 $$
 \begin{align*}
-    d_{W_1} \sL(\theta)^* \equiv \frac{1}{M} \sum_{i=1}^{M} \Delta'(z_{1,i}) e_i x_i^t
+    \nabla_{W_1} \sL(\theta) = \frac{1}{M} \sum_{i=1}^{M} \Delta'(z_{1,i}) e_i x_i^t
 \end{align*}
 $$
 and the first term in \(\mathrm{num}(\theta)\) is
 $$
 \begin{align*}
-    d_{W_1} \sL(\theta) \cdot d_{W_1} \sL(\theta)^* &=
+    d_{W_1} \sL(\theta) \cdot \nabla_{W_1} \sL(\theta) &=
     \frac{1}{M^2} \sum_{i,j=1}^{M} \langle \Delta'(z_{1,i}) \Delta'(z_{1,j}) e_j x_j^t x_i, e_i \rangle.
 \end{align*}
 $$
-In a similar way, we can make the identification
+In a similar way, we can compute
 $$
 \begin{align*}
-    d_{b_1} \sL(\theta)^* = \frac{1}{M} \sum_{i=1}^{M} \Delta'(z_{1,i}) e_i
+    \nabla_{b_1} \sL(\theta) = \frac{1}{M} \sum_{i=1}^{M} \Delta'(z_{1,i}) e_i
 \end{align*}
 $$
 and the second term in \(\mathrm{num}(\theta)\) is
 $$
 \begin{align*}
-    d_{b_1} \sL(\theta) \cdot d_{b_1} \sL(\theta)^* &=
+    d_{b_1} \sL(\theta) \cdot \nabla_{b_1} \sL(\theta) &=
     \frac{1}{M^2} \sum_{i,j=1}^{M} \langle \Delta'(z_{1,i}) \Delta'(z_{1,j}) e_j, e_i \rangle.
 \end{align*}
 $$
@@ -359,7 +362,7 @@ $$
     &= \frac{1}{M} \sum_{i=1}^{M} \langle \Delta'(z_{1,i}) V x_i, \Delta'(z_{1,i}) W x_i \rangle.
 \end{align*}
 $$
-Similar computations yield
+Analogously, the other second-order partial derivatives are
 $$
 \begin{align*}
     d^2_{W_1,b_1} \sL(\theta) \cdot (W,b) &=
@@ -375,7 +378,7 @@ $$
     \langle \Delta'(z_{1,i}) a, \Delta'(z_{1,i}) b \rangle.
 \end{align*}
 $$
-Note that the above results imply \(d^3 \sL(\theta) \equiv 0\) and consequently that
+Note that the above results imply \(d^3 \sL(\theta) \equiv 0\) and consequently
 \(\sL\) is equal to its second-order Taylor series expansion at \(\theta\).
 To see this, observe (for example) that
 $$
@@ -388,10 +391,10 @@ $$
 $$
 Similarly, the other third-order partial derivatives are also identically equal to \(0\).
 
-Plugging in the adjoints, we obtain
+Plugging in the partial gradients, we obtain
 $$
 \begin{align*}
-    &{} d^2_{W_1} \sL(\theta) \cdot (d_{W_1} \sL(\theta)^*, d_{W_1} \sL(\theta)^*) \\
+    &{} d^2_{W_1} \sL(\theta) \cdot (\nabla_{W_1} \sL(\theta), \nabla_{W_1} \sL(\theta)) \\
     &= \frac{1}{M^3} \sum_{i,j,k=1}^{M}
     \langle
         \Delta'(z_{1,i}) \Delta'(z_{1,j}) e_j x_j^t x_i,
@@ -402,7 +405,7 @@ $$
 and
 $$
 \begin{align*}
-    &{} d^2_{b_1} \sL(\theta) \cdot (d_{b_1} \sL(\theta)^*, d_{b_1} \sL(\theta)^*) \\
+    &{} d^2_{b_1} \sL(\theta) \cdot (\nabla_{b_1} \sL(\theta), \nabla_{b_1} \sL(\theta)) \\
     &= \frac{1}{M^3} \sum_{i,j,k=1}^{M}
     \langle
         \Delta'(z_{1,i}) \Delta'(z_{1,j}) e_j,
@@ -413,7 +416,7 @@ $$
 Finally,
 $$
 \begin{align*}
-    &{} d^2_{W_1,b_1} \sL(\theta) \cdot (d_{W_1} \sL(\theta)^*, d_{b_1} \sL(\theta)^*) \\
+    &{} d^2_{W_1,b_1} \sL(\theta) \cdot (\nabla_{W_1} \sL(\theta), \nabla_{b_1} \sL(\theta)) \\
     &= \frac{1}{M^3} \sum_{i,j,k=1}^{M}
     \langle
         \Delta'(z_{1,i}) \Delta'(z_{1,j}) e_j x_j^t x_i,
