@@ -9,8 +9,8 @@ In this post, we explicitly compute the optimal learning rates
 for a special class of fully-connected neural networks.
 
 The class consists of single-layer fully-connected neural networks
-with piecewise-linear activation functions.  We assume that the
-optimization scheme is mini-batch gradient descent.
+with piecewise-linear activation functions.  We assume that the loss
+function is norm-squared and the optimization scheme is mini-batch gradient descent.
 
 The focus on piecewise-linear activation functions is motivated by two things:
 First, such activation functions are widely used in practice (for example, standard
@@ -39,7 +39,9 @@ Here, \(\alpha \in \bR_{> 0}\) is a fixed *learning rate*,
 \(\nabla f(\theta)\) is the gradient of \(f\) at \(\theta\),
 and \(\theta\) is given a suitable initial value.
 
-Suppose that \(\theta \in \Theta\) is fixed.  We want to choose \(\alpha\) such that
+We are interested in a dynamic learning rate policy, in which \(\alpha\) is
+a function of \(\theta\).  In particular, suppose that \(\theta\) is fixed and we
+want to choose \(\alpha\) such that
 $$
     f(\theta - \alpha \nabla f(\theta))
 $$
@@ -154,13 +156,13 @@ since \(\sigma_0\) is piecewise-linear.
 Consider the single-layer, fully-connected neural network
 $$
 \begin{align*}
-    f : \Theta \times \bR^{n_0} &\to \bR^{n_1}
+    \hat{y} : \Theta \times \bR^{n_0} &\to \bR^{n_1}
 \end{align*}
 $$
 defined by
 $$
 \begin{align*}
-    f(\theta, x) &= \sigma (W_1 x + b_1).
+    \hat{y}(\theta, x) &= \sigma (W_1 x + b_1).
 \end{align*}
 $$
 For notational convenience, we introduce the *intermediate computation map*
@@ -176,18 +178,18 @@ $$
 \end{align*}
 $$
 
-In the rest of this section, we will assume that we are working
+In the rest of this post, we will assume that we are working
 away from those points where the activation map is not differentiable.
 This is necessary since piecewise-linear functions are not
 everywhere differentiable, in general.
 
-We will need the first- and second-order partial derivatives of \(f\) with
+We will need the first- and second-order partial derivatives of \(\hat{y}\) with
 respect to \(W_1, b_1\).
 
-The first-order partial derivatives of \(f\) at \((\theta, x)\) are
+The first-order partial derivatives of \(\hat{y}\) at \((\theta, x)\) are
 $$
 \begin{align*}
-    d_{W_1} f(\theta,x) \cdot W
+    d_{W_1} \hat{y}(\theta,x) \cdot W
     &= d \sigma(z_1(\theta,x)) \circ d_{W_1} z_1(\theta,x) \cdot W \\
     &= \Delta \sigma'(z_1(\theta,x)) W x
 \end{align*}
@@ -195,29 +197,29 @@ $$
 and
 $$
 \begin{align*}
-    d_{b_1} f(\theta,x) \cdot b
+    d_{b_1} \hat{y}(\theta,x) \cdot b
     &= d \sigma(z_1(\theta,x)) \circ d_{b_1} z_1(\theta,x) \cdot b \\
     &= \Delta \sigma'(z_1(\theta,x)) b.
 \end{align*}
 $$
-The second-order partial derivatives of \(f\) at \((\theta, x\)) are
+The second-order partial derivatives of \(\hat{y}\) at \((\theta, x\)) are
 $$
 \begin{align*}
-    d^2_{W_1} f(\theta,x) \cdot (V,W)
+    d^2_{W_1} \hat{y}(\theta,x) \cdot (V,W)
     &= \Delta [d \sigma'(z_1(\theta,x)) \circ \cdots] W x = 0_{n_1}
 \end{align*}
 $$
 and
 $$
 \begin{align*}
-    d^2_{b_1} f(\theta,x) \cdot (a,b)
+    d^2_{b_1} \hat{y}(\theta,x) \cdot (a,b)
     &= \Delta [d \sigma'(z_1(\theta,x)) \circ \cdots] b = 0_{n_1}
 \end{align*}
 $$
 and finally
 $$
 \begin{align*}
-    d^2_{W_1,b_1} f(\theta,x) \cdot (W,b)
+    d^2_{W_1,b_1} \hat{y}(\theta,x) \cdot (W,b)
     &= \Delta [d \sigma'(z_1(\theta,x)) \circ \cdots] b = 0_{n_1}.
 \end{align*}
 $$
@@ -239,10 +241,10 @@ defined by
 $$
 \begin{align*}
     \sL(\theta)
-    &= \frac{1}{2M} \sum_{i=1}^{M} \langle f(\theta, x_i) - y_i, f(\theta, x_i) - y_i \rangle,
+    &= \frac{1}{2M} \sum_{i=1}^{M} \langle \hat{y}(\theta, x_i) - y_i, \hat{y}(\theta, x_i) - y_i \rangle,
 \end{align*}
 $$
-where \(\langle\cdot,\cdot\rangle\) is the Euclidean inner product.  To
+where \(\langle\cdot,\cdot\rangle\) is the Euclidean inner product on \(\bR^{n_1}\).  To
 make use of the results in the previous section,
 \(\sL\) must be equal to its second-order Taylor series expansion at \(\theta\).  For
 now, let's assume this is true; it will be proven below
@@ -276,7 +278,7 @@ $$
 {
 $
 \begin{align*}
-    e_i &= f(\theta, x_i) - y_i \\
+    e_i &= \hat{y}(\theta, x_i) - y_i \\
     \Delta'(z_{1,i}) &= \Delta \sigma'(z_1(\theta, x_i)).
 \end{align*}
 $
@@ -285,7 +287,7 @@ $$
 Observe that, using the cyclic property of trace, we have
 $$
 \begin{align*}
-    \langle v, d_{W_1} f(\theta, x_i) \cdot W \rangle
+    \langle v, d_{W_1} \hat{y}(\theta, x_i) \cdot W \rangle
     &= \tr(v^t \Delta' (z_{1,i}) Wx_i) \\
     &= \tr(x_i v^t \Delta' (z_{1,i}) W) \\
     &= \langle \Delta' (z_{1,i}) v x_i^t, W \rangle_F,
@@ -294,16 +296,16 @@ $$
 where \(\langle A, B \rangle_F = \tr(A^t B)\) is the Frobenius inner product.  This shows that
 $$
 \begin{align*}
-    d_{W_1} f(\theta, x_i)^* \cdot v = \Delta' (z_{1,i}) v x_i^t,
+    d_{W_1} \hat{y}(\theta, x_i)^* \cdot v = \Delta' (z_{1,i}) v x_i^t,
 \end{align*}
 $$
 where the superscript "\(*\)" denotes adjoint.  Using this, we obtain
 $$
 \begin{align*}
     d_{W_1} \sL(\theta) \cdot W
-    &= \frac{1}{M} \sum_{i=1}^{M} \langle d_{W_1} f(\theta, x_i) \cdot W, e_i \rangle \\
+    &= \frac{1}{M} \sum_{i=1}^{M} \langle d_{W_1} \hat{y}(\theta, x_i) \cdot W, e_i \rangle \\
     &= \left\langle
-        W, \frac{1}{M} \sum_{i=1}^{M} d_{W_1} f(\theta, x_i)^* \cdot e_i
+        W, \frac{1}{M} \sum_{i=1}^{M} d_{W_1} \hat{y}(\theta, x_i)^* \cdot e_i
     \right\rangle_F \\
     &= \left\langle
         W, \frac{1}{M} \sum_{i=1}^{M} \Delta'(z_{1,i}) e_i x_i^t
@@ -346,7 +348,7 @@ $$
 {
 $
 \begin{align*}
-    \mathrm{num}(\theta) = \frac{1}{M^2} \sum_{i,j=1}^{M} (1 + x_j^t x_i)
+    \mathrm{num}(\theta) = \frac{1}{M^2} \sum_{i,j=1}^{M} (1 + x_i^t x_j)
     \langle \Delta'(z_{1,i}) \Delta'(z_{1,j}) e_j, e_i \rangle.
 \end{align*}
 $
@@ -357,8 +359,8 @@ $$
 \begin{align*}
     d^2_{W_1} \sL(\theta) \cdot (V, W)
     &= \frac{1}{M} \sum_{i=1}^{M}
-    \langle d^2_{W_1} f_i(\theta, x_i) \cdot (V, W), e_i \rangle \\
-    &\qquad+ \, \frac{1}{M} \sum_{i=1}^{M} \langle d_{W_1} f_i(\theta, x_i) \cdot V, d_{W_1} f_i(\theta, x_i) \cdot W \rangle \\
+    \langle d^2_{W_1} \hat{y}(\theta, x_i) \cdot (V, W), e_i \rangle \\
+    &\qquad+ \, \frac{1}{M} \sum_{i=1}^{M} \langle d_{W_1} \hat{y}(\theta, x_i) \cdot V, d_{W_1} \hat{y}(\theta, x_i) \cdot W \rangle \\
     &= \frac{1}{M} \sum_{i=1}^{M} \langle \Delta'(z_{1,i}) V x_i, \Delta'(z_{1,i}) W x_i \rangle.
 \end{align*}
 $$
@@ -432,8 +434,8 @@ $
 \begin{align*}
     \mathrm{den}(\theta) &=
     \frac{1}{M^3} \sum_{i,j,k=1}^{M}
-    (1 + x_j^t x_i)
-    (1 + x_k^t x_i)
+    (1 + x_i^t x_j)
+    (1 + x_i^t x_k)
     \langle
         \Delta'(z_{1,i}) \Delta'(z_{1,j}) e_j,
         \Delta'(z_{1,i}) \Delta'(z_{1,k}) e_k
@@ -449,12 +451,12 @@ $$
 $
 \alpha_*(\theta) =
 \frac{
-    M \sum_{i,j=1}^{M} (1 + x_j^t x_i)
+    M \sum_{i,j=1}^{M} (1 + x_i^t x_j)
         \langle \Delta'(z_{1,i}) \Delta'(z_{1,j}) e_j, e_i \rangle
 }{
     \sum_{i,j,k=1}^{M}
-        (1 + x_j^t x_i)
-        (1 + x_k^t x_i)
+        (1 + x_i^t x_j)
+        (1 + x_i^t x_k)
         \langle
             \Delta'(z_{1,i}) \Delta'(z_{1,j}) e_j,
             \Delta'(z_{1,i}) \Delta'(z_{1,k}) e_k
