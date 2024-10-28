@@ -18,7 +18,8 @@ ReLU and leaky ReLU). Second, such activation functions lead to simpler second-o
 of the loss function, and these partial derivatives are needed to compute the
 approximately-optimal learning rates.
 
-This post generalizes [Part 1](TODO), which dealt only with the single-layer case.
+This post generalizes [Part 1]({{< ref "optimal_learning_rates_one_layer" >}}),
+which dealt only with the single-layer case.
 
 <!--more-->
 
@@ -53,7 +54,7 @@ $$
 $$
 is minimized.
 
-The next definition is justified in light of the developments in [Part 1](TODO).
+The next definition is justified in light of the developments in [Part 1]({{< ref "optimal_learning_rates_one_layer" >}}).
 
 *Definition*: Suppose that
 $$
@@ -550,7 +551,7 @@ $
 }
 $$
 
-As a basic sanity check, we can compare this to the \(L = 1\) result from [Part 1](TODO).
+As a basic sanity check, we can compare this to the \(L = 1\) result from [Part 1]({{< ref "optimal_learning_rates_one_layer" >}}).
 We have
 * \(a_0 (i, j) = x_i^t x_j\),
 * \(\sR_{1,2} (i, j) = \Delta'_1(i) \Delta'_1(j)\), and
