@@ -151,10 +151,10 @@ $$
 $$
 since \(\sigma_0\) is piecewise-linear.
 
-Now consider a single-layer, fully-connected neural network
+Consider the single-layer, fully-connected neural network
 $$
 \begin{align*}
-    f : \Theta &\to \bR^{n_1}
+    f : \Theta \times \bR^{n_0} &\to \bR^{n_1}
 \end{align*}
 $$
 defined by
@@ -163,7 +163,7 @@ $$
     f(\theta, x) &= \sigma (W_1 x + b_1).
 \end{align*}
 $$
-For notational convenience, we introduce the "intermediate computation" map
+For notational convenience, we introduce the *intermediate computation map*
 $$
 \begin{align*}
     z_1 : \Theta \times \bR^{n_0} &\to \bR^{n_1}
@@ -210,14 +210,14 @@ $$
 and
 $$
 \begin{align*}
-    d^2_{b_1} f \cdot (a,b)
+    d^2_{b_1} f(\theta,x) \cdot (a,b)
     &= \Delta [d \sigma'(z_1(\theta,x)) \circ \cdots] b = 0_{n_1}
 \end{align*}
 $$
 and finally
 $$
 \begin{align*}
-    d^2_{W_1,b_1} f \cdot (W,b)
+    d^2_{W_1,b_1} f(\theta,x) \cdot (W,b)
     &= \Delta [d \sigma'(z_1(\theta,x)) \circ \cdots] b = 0_{n_1}.
 \end{align*}
 $$
