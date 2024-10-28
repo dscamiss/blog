@@ -571,4 +571,4 @@ This matches the result from Part 1, but with different notation for the diagona
 
 The computation of \(\alpha_*(\theta)\) is probably too heavy for \(\alpha_*(\theta)\) to
 be updated at each iteration of gradient descent.  It is likely that a useful approximation
-is possible, however.  This might be an interesting topic for another post.
+exists, and this might be an interesting topic for another post.
