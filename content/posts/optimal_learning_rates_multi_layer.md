@@ -54,7 +54,9 @@ $$
 $$
 is minimized.
 
-The next definition is justified in light of the developments in [Part 1]({{< ref "optimal_learning_rates_one_layer" >}}).
+In the next definition, \(df(\theta)\) and \(d^2 f(\theta)\) are the total derivative
+and second-order total derivative of \(f\) at \(\theta\).
+The definition is justified in light of the developments in [Part 1]({{< ref "optimal_learning_rates_one_layer" >}}).
 
 *Definition*: Suppose that
 $$
@@ -163,7 +165,7 @@ $$
 $$
 where \(\langle\cdot,\cdot\rangle\) is the Euclidean inner product on \(\bR^{n_L}\).
 
-The approximately-optimal learning rate for \(\sL\) at \(\theta\) is
+The approximately-optimal learning rate for \(\sL\) at \(\theta\) is equal to
 $$
 \begin{align}
   \label{eq:optimal_learning_rate_product_L}\tag{2}%
@@ -569,6 +571,6 @@ $$
 $$
 This matches the result from Part 1, but with different notation for the diagonal matrices.
 
-The computation of \(\alpha_*(\theta)\) is probably too heavy for \(\alpha_*(\theta)\) to
+The computation of \(\alpha_*(\theta)\) is probably too heavy for the learning rate to
 be updated at each iteration of gradient descent.  It is likely that a useful approximation
 exists, and this might be an interesting topic for another post.
