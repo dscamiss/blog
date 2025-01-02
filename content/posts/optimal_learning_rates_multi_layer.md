@@ -1,7 +1,7 @@
 +++
 title = 'Approximately-optimal learning rates in a special class of fully-connected neural networks'
 date = 2024-10-25T15:29:24-07:00
-draft = false
+draft = true
 tag = ['fully-connected', 'learning-rate', 'random-notes']
 +++
 
