@@ -1,25 +1,18 @@
 +++
-title = 'Optimal learning rates in a special class of fully-connected neural networks: The single-layer case'
+title = "Theory and implementation of the generalized Newton's method"
 date = 2024-08-22T13:24:04-07:00
-draft = false
-tag = ['fully-connected', 'learning-rate', 'random-notes']
+draft = true
+tag = ['hessian', 'learning-rate', 'gradient descent', 'stochastic gradient descent', 'sgd', 'random-notes']
 +++
 
-In this post, we explicitly compute the optimal learning rates
-for a special class of fully-connected neural networks.
-
-The class consists of single-layer fully-connected neural networks
-with piecewise-linear activation functions.  We assume that the loss
-function is norm-squared and the optimization scheme is mini-batch gradient descent.
-
-The focus on piecewise-linear activation functions is motivated by two things:
-First, such activation functions are widely used in practice (for example, standard
-ReLU and leaky ReLU). Second, such activation functions lead to simpler second-order partial derivatives
-of the loss function, and these partial derivatives are needed to compute the optimal learning rates.
+In this post, we review the generalized Newton's method (GeN) proposed in
+[1].  Then, we give a high-level overview of a PyTorch implementation, which
+runs exact and approximate versions of GeN.
 
 <!--more-->
 
 $$
+    \newcommand{\bN}{\mathbb{N}}
     \newcommand{\bR}{\mathbb{R}}
     \newcommand{\sL}{\mathscr{L}}
     \newcommand{\tr}{\mathrm{trace}}
@@ -27,75 +20,103 @@ $$
     \definecolor{magicmint}{rgb}{0.67, 0.94, 0.82}
 $$
 
-## Optimal learning rates in gradient descent
+## Generalized Newton's method
 
 Consider a smooth function \(f : \Theta \to \bR\),
-where \(\Theta\) is a finite-dimensional vector space.
-Gradient descent attempts to minimize \(f\) by iterating on
+where \(\Theta\) is a finite-dimensional inner product space.
+Broadly speaking, gradient descent attempts to minimize \(f\) by iterating
 $$
-    \theta \leftarrow \theta - \alpha \nabla f(\theta).
+    \theta_t \leftarrow \theta_{t-1} - \alpha_t \omega(\theta_{t-1}, \nabla f(\theta_{t-1})),
 $$
-Here, \(\alpha \in \bR_{> 0}\) is a fixed *learning rate*,
-\(\nabla f(\theta)\) is the gradient of \(f\) at \(\theta\),
-and \(\theta\) is given a suitable initial value.
+where
+* \(\alpha_t \in \bR_{\geq 0}\) is the *learning rate* at step \(t\),
+* \(\omega : \Theta \times \Theta \to \Theta\) is the *optimizer*, and
+* \(\nabla f(\theta)\) is the gradient of \(f\) at \(\theta\).
 
-We are interested in a dynamic learning rate policy, in which \(\alpha\) is
-a function of \(\theta\).  In particular, suppose that \(\theta\) is fixed and we
-want to choose \(\alpha\) such that
+For example, in stochastic gradient descent (SGD) the optimizer is simply \(\omega(\theta_1, \theta_2) = \theta_2\),
+and the gradient descent iteration becomes
 $$
-    f(\theta - \alpha \nabla f(\theta))
-$$
-is minimized.  Equivalently, we want to minimize the composite function
-$$
-    f \circ g : \bR_{> 0} \to \bR,
-$$
-where the map \(g : \bR_{> 0} \to \Theta\) is defined by
-$$
-    g(\alpha) = \theta - \alpha \nabla f(\theta).
+    \theta_t \leftarrow \theta_{t-1} - \alpha_t \nabla f(\theta_{t-1}).
 $$
 
-Now assume that \(f\) is equal to its second-order Taylor series expansion at \(\theta\):
-$$
-    f(\theta + h)
-    = f(\theta) + df(\theta) \cdot h + \frac{1}{2} d^2 f(\theta) \cdot (h, h).
-$$
-Here, \(d f(\theta)\) and \(d^2 f(\theta)\) are the first-order and second-order total derivatives of \(f\) at \(\theta\).
-
-Under this assumption,
+The *generalized Newton's method* introduced in [1] is a learning rate scheduler.  That is,
+the method is a scheme for choosing \(\alpha_t\) at each gradient descent iteration, with
+the goal of accelerating the convergence of gradient descent. To motivate the generalized
+Newton's method, suppose that \(\theta\) is fixed and introduce the function
 $$
 \begin{align*}
-    (f \circ g)(\alpha)
-    &= f(\theta) - \alpha df(\theta) \cdot \nabla f(\theta) +
-    \frac{\alpha^2}{2} d^2 f(\theta) \cdot (\nabla f(\theta), \nabla f(\theta)).
+    g_\theta : \bR_{\geq 0} &\to \bR \\
+    \alpha &\mapsto g_\theta(\alpha) = f(\theta - \alpha \omega(\theta, \nabla f(\theta))).
 \end{align*}
 $$
-By differentiating both sides, we obtain
+To keep the notation under control, we will suppress the arguments to \(\omega\),
+so that
 $$
-    (f \circ g)'(\alpha) = -df(\theta) \cdot \nabla f(\theta) + \alpha d^2 f(\theta) \cdot (\nabla f(\theta), \nabla f(\theta))
+    g_\theta (\alpha) = f(\theta - \alpha \omega).
 $$
-and
+
+By composition, \(g_\theta\) is smooth, and its second-order Taylor series expansion at \(0\) is
 $$
-    (f \circ g)''(\alpha) = d^2 f(\theta) \cdot (\nabla f(\theta), \nabla f(\theta)).
+    g_\theta(\alpha) = f(\theta) - \alpha df(\theta) \cdot \omega +
+    \frac{\alpha^2}{2} d^2 f(\theta) \cdot (\omega, \omega) + O(\alpha^3)
 $$
+for \(\alpha\) sufficiently small, say \(|\alpha| < \delta(\theta)\).
+
+We want to minimize \(g_\theta\).   To do so, we work with the second-order approximation
+$$
+    g_\theta(\alpha) \approx f(\theta) - \alpha df(\theta) \cdot \omega +
+    \frac{\alpha^2}{2} d^2 f(\theta) \cdot (\omega, \omega)
+$$
+which we will assume is valid for \(|\alpha| < \delta(\theta)\).
+
 From single-variable calculus, we know that if
 $$
-    d^2 f(\theta) \cdot (\nabla f(\theta), \nabla f(\theta)) > 0,
+    d^2 f(\theta) \cdot (\omega, \omega) > 0,
 $$
-then \(f \circ g\) is strictly convex on \(\bR_{> 0}\) and
+then the second-order approximating function attains its global minimum at
 $$
     \alpha_*(\theta) =
     \frac{\mathrm{num}(\theta)}{\mathrm{den}(\theta)}
     =
     \frac{
-        df(\theta) \cdot \nabla f(\theta)
+        df(\theta) \cdot \omega
     }{
-        d^2 f(\theta) \cdot (\nabla f(\theta), \nabla f(\theta))
-    }
+        d^2 f(\theta) \cdot (\omega, \omega)
+    }.
 $$
-is its global minimizer.  We say that \(\alpha_*(\theta)\) is the
-*optimal learning rate for \(f\) at \(\theta\)*.
+Following [1], we say that \(\alpha_*(\theta)\) the *optimal learning rate* at
+\(\theta\).
 
-As a special case, suppose that \(\Theta\) is the product vector space
+*Note*: The name "optimal learning rate" is somewhat misleading, since the derivation of
+\(\alpha_*(\theta)\) is based on a local approximation. Indeed, even though
+\(g_\theta(\theta)\) may be quasi-parabolic globally, its Taylor series expansion at \(0\) may
+not accurately capture the global parabolic shape.  In this way, \(\alpha_*(\theta)\)
+can be far from the true optimal learning rate.
+
+*Note*: For comparison, the above equation is Equation (3.1) in [1], although they use different
+notation -- for example, they denote \(\alpha_*(\theta)\) by \(\eta^*_t\).
+
+We can directly use \(\alpha_*(\theta)\) to drive a learning rate scheduler, for
+example by setting
+$$
+    \alpha_t = \alpha_*(\theta_t).
+$$
+In this case, the gradient descent iteration becomes
+$$
+    \theta_t =
+    \theta_{t-1} -
+    \frac{
+        df(\theta) \cdot \omega
+    }{
+        d^2 f(\theta) \cdot (\omega, \omega)
+    }
+    \omega.
+$$
+This learning rate scheduler is the *exact generalized Newton's method (exact GeN)*.
+
+*Note*: Practically speaking, \(\theta\) represents trainable model parameters lumped into a single
+parameter vector. We can rephrase the calculation of \(\alpha_*(\theta)\) in terms of the individual
+parameter vectors, as follows.   First, suppose that \(\Theta\) is the product inner product space
 $$
     \Theta = \Theta_1 \times \cdots \times \Theta_n
 $$
@@ -104,21 +125,70 @@ Then we can write
 $$
     \alpha_*(\theta) =
     \frac{
-        \sum_{i=1}^{n} d_{\theta_i} f(\theta) \cdot \nabla_{\theta_i} f(\theta)
+        \sum_{i=1}^{n} d_{\theta_i} f(\theta) \cdot \omega_i
     }{
-        \sum_{i,j=1}^{n} d^2_{\theta_i,\theta_j} f(\theta) \cdot (\nabla_{\theta_i} f(\theta), \nabla_{\theta_j} f(\theta))
+        \sum_{i,j=1}^{n} d^2_{\theta_i,\theta_j} f(\theta) \cdot (\omega_i, \omega_j)
     }.
 $$
 Here we have introduced the following notation:
-* \(\nabla_{\theta_i} f(\theta)\) is the partial gradient of \(f\) with respect to \(\theta_i\) at \(\theta\), and
-* \(d^2_{\theta_i,\theta_j} f(\theta)\) is the second-order partial derivative of \(f\) with respect to \((\theta_i,\theta_j)\) at \(\theta\).
+* \(\nabla_{\theta_i} f(\theta)\) is the partial gradient of \(f\) with respect to \(\theta_i\) at \(\theta\),
+* \(d^2_{\theta_i,\theta_j} f(\theta)\) is the second-order partial derivative of \(f\) with respect to \((\theta_i,\theta_j)\) at \(\theta\), and
+* \(\omega = (\omega_1,\dots,\omega_n)\), with the same component division as \(\theta\).
+
+To avoid the computational burden of computing second-order partial derivatives
+(in other words, computing full Hessians or Hessian-vector products),
+the authors of [1] propose the following "backpropagation-free" differencing scheme.
+
+**Step 1**: At the \(t\)-th gradient descent iteration, set
+$$
+\begin{align*}
+    f_- &= f(\theta_t - \alpha_{t-1} \omega_t) \\
+    f_0 &= f(\theta_t) \\
+    f_+ &= f(\theta_t + \alpha_{t-1} \omega_t),
+\end{align*}
+$$
+where \(\omega_t = \omega(\theta_t, \nabla f(\theta_t))\) and \(\alpha_0 > 0\) is chosen *a priori*.
+
+**Step 2**: Fit a second-order polynomial to
+$$
+    \{ (-\alpha_{t-1}, f_-), (0, f_0), (\alpha_{t-1}, f_+) \}.
+$$
+
+**Step 3**: If the second-order polynomial fit is convex, then set
+$$
+    \Delta_t = \frac{\alpha_{t-1}}{2} \frac{f_+ - f_-}{f_+ - 2 f_0 + f_-}
+$$
+and
+$$
+    \alpha_t = \gamma \alpha_{t-1} + (1 - \gamma) \Delta_t,
+$$
+where the moving average coefficient \(0 \leq \gamma < 1\) is chosen *a priori*.
+On the other hand, if the second-order polynomial fit is not convex, then set
+\(\alpha_t\) to a small default learning rate.
+
+This learning rate scheduler is the *approximate generalized Newton's method (approximate GeN)*.
+
+*Note*: Approximate GeN is "backpropagation-free" in the sense that it does not use
+_additional_ backpropagation steps to compute second-order partial derivatives.
+Of course, backpropagation is still used to compute the parameter gradients
+passed to each \(\omega_t\).
+
+*Note*: As noted in [1], assuming that \(\alpha_*(\theta_t)\) varies slowly in \(t\), we can recompute
+\(\alpha_t\) periodically to amortize the extra computation needed for approximate GeN.
+
+*Note*: In an implementation of exact or approximate GeN, care should be taken to ensure that each
+\(\alpha_t\) is in the interval where the second-order approximation
+is declared (or determined to be) valid.  If \(\alpha_t\) is outside this interval,
+then we can revert to a small default learning rate.
+
+
+## Fully-connected neural networks
 
 For \(k\)th-order partial derivatives, when \(i_1 = \cdots = i_k = i\) we will write
 $$
     d^k_{\theta_i} f(\theta) \equiv d^k_{\theta_{i_1},\dots,\theta_{i_k}} f(\theta).
 $$
 
-## Fully-connected neural networks
 
 We begin by defining the *parameter space* to be
 $$
@@ -513,3 +583,10 @@ exact even in the two-layer case).
 Nevertheless, the expansion might give
 a useful approximation, or some other conditions can be imposed to make it
 exact.
+
+## Implementation
+
+## References
+
+[1] Zi Bu and Shiyun Xu, *Automatic gradient descent with generalized Newton's method*,
+[arXiv:2407.02772](https://arxiv.org/abs/2407.02772) [cs.LG]
