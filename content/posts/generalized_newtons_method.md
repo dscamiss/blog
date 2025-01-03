@@ -1,6 +1,6 @@
 +++
 title = "The generalized Newton's method for learning rate scheduling"
-date = 2024-08-22T13:24:04-07:00
+date = 2024-12-25T13:24:04-07:00
 draft = false
 tag = ['hessian', 'learning-rate', 'gradient descent', 'stochastic gradient descent', 'sgd', 'random-notes']
 +++
