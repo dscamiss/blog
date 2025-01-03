@@ -1,13 +1,15 @@
 +++
-title = "Theory and implementation of the generalized Newton's method"
+title = "The generalized Newton's method for learning rate scheduling"
 date = 2024-08-22T13:24:04-07:00
-draft = true
+draft = false
 tag = ['hessian', 'learning-rate', 'gradient descent', 'stochastic gradient descent', 'sgd', 'random-notes']
 +++
 
 In this post, we review the generalized Newton's method (GeN) proposed in
-[1].  Then, we give a high-level overview of a PyTorch implementation, which
-runs exact and approximate versions of GeN.
+[1].  Then, we explicitly compute the learning rates prescribed by the exact
+version of GeN, for a simple problem instance.  Then, we give a high-level
+overview of a PyTorch implementation which runs the exact version of GeN for
+stochastic gradient descent.
 
 <!--more-->
 
@@ -80,15 +82,20 @@ $$
         d^2 f(\theta) \cdot (\omega, \omega)
     }.
 $$
-Following [1], we say that \(\alpha_*(\theta)\) is the *optimal learning rate* at
-\(\theta\).
+Following [1], we say that \(\alpha_*(\theta)\) is the *optimal learning rate* for \(f\) at \(\theta\).
 
 *Note*: The name "optimal learning rate" is somewhat misleading, since the derivation of
 \(\alpha_*(\theta)\) is based on a local approximation. Indeed, even though
 \(g_\theta\) may be quasi-parabolic globally, its Taylor series expansion at \(0\) may
 not accurately capture the global parabolic shape.  In this way, \(\alpha_*(\theta)\)
 can be far from the point at which the second-order approximating function attains
-its global minimum.  We will show an example of this phenomenon in the next section. \(\diamond\)
+its global minimum.
+![Inaccuracy in optimal learning rates](/fully_connected_example.png)
+The above figure shows an example of this phenomenon, for a particular case where
+\(f\) is a loss function.  The blue curve
+is \(g_\theta\), and the green curve is the second-order approximating function.
+The point at which the second-order approximating function attains
+its global minimum is marked with the vertical line. \(\diamond\)
 
 *Note*: For comparison purposes, the above equation is Equation (3.1) in [1], although they use different notation -- for example, they write \(\eta^*_t\) instead of \(\alpha_*(\theta)\).
 \(\diamond\)
@@ -184,15 +191,15 @@ $$
 Here we have introduced the following notation:
 * \(\nabla_{\theta_i} f(\theta)\) is the partial gradient of \(f\) with respect to \(\theta_i\) at \(\theta\), and
 * \(d^2_{\theta_i,\theta_j} f(\theta)\) is the second-order partial derivative of \(f\) with respect to \((\theta_i,\theta_j)\) at \(\theta\).
-\(\diamond\)
 
-## Fully-connected neural networks
+We will see an example of this in the next section. \(\diamond\)
 
-For \(k\)th-order partial derivatives, when \(i_1 = \cdots = i_k = i\) we will write
-$$
-    d^k_{\theta_i} f(\theta) \equiv d^k_{\theta_{i_1},\dots,\theta_{i_k}} f(\theta).
-$$
+## Example: Exact GeN for single-layer fully-connected neural networks
 
+In this section, we compute optimal learning rates prescribed by exact GeN.
+The focus here is a simple problem instance, where we have a single-layer fully-connected neural network activated by a piecewise-linear function
+(for example, ReLU), the objective is to minimize the norm-squared loss function,
+and the optimizer is SGD.
 
 We begin by defining the *parameter space* to be
 $$
@@ -297,6 +304,8 @@ $$
     &= \Delta [d \sigma'(z_1(\theta,x)) \circ \cdots] b = 0_{n_1}.
 \end{align*}
 $$
+Note that we have written \(d^2_{W_1} \hat{y}\) instead of \(d^2_{W_1, W_1} \hat{y}\)
+and similarly for the \(b_1\) derivative.
 
 Turning to optimal learning rates, suppose that we have (mini-batch) training data
 $$
@@ -324,7 +333,7 @@ make use of the results in the previous section,
 now, let's assume this is true; it will be proven below
 after partial derivative computations.
 
-Wherever it is well-defined, the optimal learning rate for \(\sL\) at \(\theta\) is
+Since the optimier is SGD, the optimal learning rate for \(\sL\) at \(\theta\) is
 $$
 \begin{align*}
     \alpha_*(\theta) &=
@@ -343,10 +352,10 @@ $$
         &\qquad + \, d^2_{b_1} \sL(\theta) \cdot (\nabla_{b_1} \sL(\theta), \nabla_{b_1} \sL(\theta)).
 \end{align*}
 $$
-Recall that for \(\alpha_*(\theta)\) to be "well-defined,"
+Recall that for \(\alpha_*(\theta)\) to be well-defined,
 we must have \(\mathrm{den}(\theta) > 0\).
 
-To compute \(\alpha_*\), we start with the partial gradients.  For convenience, we set
+To compute \(\alpha_*(\theta)\), we start with the partial gradients.  For convenience, we set
 $$
 \colorbox{lesserbox}
 {
@@ -539,7 +548,7 @@ $
 $
 }
 $$
-For stochastic gradient descent (i.e., \(M = 1\)), this expression simplifies to
+For the case \(M = 1\), this expression simplifies to
 $$
 \colorbox{lesserbox}
 {
@@ -577,18 +586,245 @@ $
 $$
 This directly relates the optimal learning rate to the norm of the input vector.
 
-In another post, we will address the practical impact of using the
-optimal learning rates.  If there is a tangible benefit
-(i.e., faster training), then it might be worth pursuing a similar
-analysis for multi-layer fully-connected neural networks.
-One challenge in this direction is that we can no longer rely on the
-exactness of the second-order Taylor series expansion (indeed, this fails to be
-exact even in the two-layer case).
-Nevertheless, the expansion might give
-a useful approximation, or some other conditions can be imposed to make it
-exact.
+## Implementation of exact GeN for SGD
 
-## Implementation
+This snippet computes first-order approximation coefficients.
+
+```python
+def norm_of_tensor_dict(tensor_dict: _TensorDict, p: float = 2.0) -> _Scalar:
+    """Helper function to sum the norms of each tensor in a dictionary.
+
+    Args:
+        tensor_dict: Dictionary containing only tensors.
+        ord: Order of the norm (default = 2.0).
+
+    Returns:
+        Scalar tensor with 2-norm.
+    """
+    tensors = tensor_dict.values()
+    return sum(linalg.vector_norm(tensor, p) ** 2.0 for tensor in tensors)
+
+
+def first_order_approximation_coeffs(
+    model: nn.Module, criterion: CriterionType, x: Real[Tensor, "..."], y: Real[Tensor, "..."]
+) -> tuple[_ScalarTwoTuple, _TensorDict]:
+    """Compute coefficients of first-order Taylor series approximation.
+
+    Args:
+        model: Network model.
+        criterion: Loss criterion function.
+        x: Input tensor.
+        y: Output tensor (target).
+
+    Returns:
+        Tuple containing:
+            - Tuple of scalar tensors with approximation coefficients.
+            - Dictionary with model parameter gradients.  This can be ignored,
+              since it is only to avoid code duplication in the second-order
+              approximation code.
+    """
+    # Extract parameters from `model` to pass to `torch.func.functional_call()`
+    params_dict = dict(model.named_parameters())
+
+    # Wrapper function for parameter-dependent loss
+    def parameterized_loss(params_dict):
+        y_hat = functional_call(model, params_dict, (x,))
+        return criterion(y_hat, y)
+
+    with torch.no_grad():
+        # Polynomial coefficients
+        coeff_0 = parameterized_loss(params_dict)
+        coeff_1 = torch.as_tensor(0.0)
+
+        # Compute parameter gradients
+        grad_params_dict = grad(parameterized_loss)(params_dict)
+
+        # Compute first-order coefficient
+        coeff_1 = norm_of_tensor_dict(grad_params_dict)
+
+    return (coeff_0, -coeff_1), grad_params_dict
+```
+
+This snippet builds on the previous one, to compute second-order approximation coefficients.
+
+```python
+def second_order_approximation_coeffs(
+    model: nn.Module, criterion: CriterionType, x: Real[Tensor, "..."], y: Real[Tensor, "..."]
+) -> _ScalarThreeTuple:
+    """Compute coefficients of second-order Taylor series approximation.
+
+    Args:
+        model: Network model.
+        criterion: Loss criterion function.
+        x: Input tensor.
+        y: Output tensor (target).
+
+    Returns:
+        Tuple of scalar tensors with approximation coefficients.
+    """
+
+    # Wrapper function for parameter-dependent loss
+    # - This version is compatible with `make_functional()`, which is needed
+    #   for the call to `torch.autograd.functional.vhp()`.  PyTorch issues a
+    #   warning about using `make_functional()`, but there seems to be no
+    #   analogue of `torch.autograd.functional.vhp()` which can be used with
+    #   `torch.func.functional_call()`.
+    def parameterized_loss(*params):
+        model_func, _ = make_functional(model)
+        y_hat = model_func(params, x)
+        return criterion(y_hat, y)
+
+    with torch.no_grad():
+        coeffs, grad_params_dict = first_order_approximation_coeffs(model, criterion, x, y)
+        coeff_2 = torch.as_tensor(0.0)
+
+        # Compute second-order coefficient
+        params = tuple(model.parameters())
+        grad_params = tuple(grad_params_dict.values())
+        _, prod = vhp(parameterized_loss, params, grad_params)
+
+        for i, grad_param in enumerate(grad_params):
+            coeff_2 += torch.dot(grad_param.flatten(), prod[i].flatten())
+
+    # Note: Minus was already applied to first-order coefficient
+    return (coeffs[0], coeffs[1], coeff_2 / 2.0)
+```
+
+Now we can subclass `torch.optim.lr_scheduler.LRScheduler` to implement
+exact GeN.
+
+```python
+class ExactGeNForSGD(LRScheduler):
+    """Exact GeN for SGD.
+
+    Args:
+        optimizer: Optimizer.
+        last_epoch: Number of last epoch.
+        model: Network model.
+        criterion: Loss criterion function.
+        lr_min: Minimum learning rate to use.
+        lr_max: Maximum learning rate to use.
+    """
+
+    _DEFAULT_LR = 1e-3
+
+    def __init__(  # noqa: DCO010
+        self,
+        optimizer: torch.optim.Optimizer,
+        last_epoch: int,
+        model: nn.Module,
+        criterion: CriterionType,
+        lr_min: float,
+        lr_max: float,
+    ) -> None:
+        super().__init__(optimizer, last_epoch)
+
+        self.model = model
+        self.criterion = criterion
+        self.lr_min = lr_min
+        self.lr_max = lr_max
+
+        self.base_lrs = [group["lr"] for group in optimizer.param_groups]
+        self.current_lrs = self.base_lrs.copy()
+
+    # Pylint complains that redefinition of step() has a different signature
+    def step(  # pylint: disable=arguments-renamed
+        self, x: Optional[Real[Tensor, "..."]] = None, y: Optional[Real[Tensor, "..."]] = None
+    ) -> list[float]:
+        """Update learning rate(s) in the optimizer.
+
+        Args:
+            x: Input tensor.
+            y: Output tensor (target).
+
+        Returns:
+            List of learning rates for each parameter group.
+        """
+        lrs = self.get_lr(x, y)
+
+        # Update learning rates in the optimizer
+        for param_group, lr in zip(self.optimizer.param_groups, lrs):
+            param_group["lr"] = lr
+
+        return lrs
+
+    def get_lr(
+        self, x: Optional[Real[Tensor, "..."]] = None, y: Optional[Real[Tensor, "..."]] = None
+    ) -> list[float]:
+        """Compute learning rate(s) for a particular batch.
+
+        Args:
+            x: Input tensor.
+            y: Output tensor (target).
+
+        Returns:
+            List of learning rates for each parameter group.
+        """
+        # Handle initial step (in this case, `x` and `y` are not available)
+        if x is None and y is None:
+            lr = self._DEFAULT_LR
+        else:
+            # Get coefficients of second-order approximation
+            coeffs = second_order_approximation_coeffs(self.model, self.criterion, x, y)
+            coeffs = [coeff.item() for coeff in coeffs]
+
+            if coeffs[2] <= 0.0:
+                # Approximation is concave --> use default learning rate
+                lr = self._DEFAULT_LR
+            else:
+                # Approximation is convex --> use alpha_star
+                alpha_star = -coeffs[1] / (2.0 * coeffs[2])
+                lr = min(self.lr_max, max(alpha_star, self.lr_min))
+
+        # Update current learning rate(s)
+        num_groups = len(self.optimizer.param_groups)
+        self.current_lrs = [lr for _ in range(num_groups)]
+
+        return self.current_lrs
+
+    def get_last_lr(self) -> list[float]:  # noqa
+        return self.current_lrs
+```
+
+The next snippet shows how to use exact GeN for SGD in a standard training loop.
+
+```python
+# Make SGD optimizer
+optimizer = optim.SGD(model.parameters())
+
+# Make exact GeN for SGD
+scheduler = ExactGeNForSGD(
+    optimizer, -1, model, criterion, config.lr_min, config.lr_max
+)
+
+<...>
+
+model.train()
+
+for epoch in range(config.num_epochs):
+    for x, y in dataloader:
+        # Move data to device
+        x = x.to(device)
+        y = y.to(device)
+
+        # Zero model parameter gradients
+        optimizer.zero_grad()
+
+        # Run forward pass
+        y_hat = model(x)
+
+        # Compute loss
+        loss = criterion(y_hat, y)
+
+        # Run backward pass
+        loss.backward()
+
+        # Adjust learning rate(s) in optimizer
+        scheduler.step(x, y)
+
+        # Adjust model parameters using new learning rate(s)
+        optimizer.step()
+```
 
 ## References
 
