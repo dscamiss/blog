@@ -1,8 +1,8 @@
 +++
-title = "The generalized Newton's method for learning rate scheduling"
+title = "The generalized Newton's method for learning rate selection"
 date = 2024-12-25T13:24:04-07:00
 draft = false
-tag = ['hessian', 'learning-rate', 'gradient descent', 'stochastic gradient descent', 'sgd', 'random-notes']
+tag = ['hessian', 'learning-rate', 'learning-rate-selection', 'gradient-descent', 'sgd', 'random-notes']
 +++
 
 In this post, we review the generalized Newton's method (GeN) proposed in
