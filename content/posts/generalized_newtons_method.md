@@ -90,12 +90,11 @@ Following [1], we say that \(\alpha_*(\theta)\) is the *optimal learning rate* f
 not accurately capture the global parabolic shape.  In this way, \(\alpha_*(\theta)\)
 can be far from the point at which the second-order approximating function attains
 its global minimum.
-![Inaccuracy in optimal learning rates](https://github.com/dscamiss/generalized-newtons-method/blob/main/src/examples/fully_connected/figures/second_order_approximation_untrained.png)
+![Inaccuracy in optimal learning rates](https://raw.githubusercontent.com/dscamiss/generalized-newtons-method/refs/heads/main/src/examples/fully_connected/figures/second_order_approximation_untrained.png)
 The above figure shows an example of this phenomenon, for a particular case where
 \(f\) is the norm-squared loss function for a fully-connected neural network.  The blue curve
 is \(g_\theta\), and the green curve is the second-order approximating function.
-The point at which the second-order approximating function attains
-its global minimum is marked with the vertical line. \(\diamond\)
+\(\diamond\)
 
 *Note*: For comparison purposes, the above equation is Equation (3.1) in [1], although they use different notation -- for example, they write \(\eta^*_t\) instead of \(\alpha_*(\theta)\).
 \(\diamond\)
