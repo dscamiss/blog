@@ -60,6 +60,10 @@ jobs:
             --gc \
             --minify \
             --baseURL "${{ steps.pages.outputs.base_url }}/"          
+      - name: Inject Google Site Verification Meta Tag
+        run: |
+          META_TAG='<meta name="google-site-verification" content="sORTc8uAwJUvoJdmGYoS0ObJ2VPUNyMX0pt3M3yH8Nc" />'
+          find ./_site -name "*.html" -exec sudo sed -i "s|</head>|$META_TAG\n</head>|g" {} +
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
