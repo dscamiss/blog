@@ -1,12 +1,15 @@
 +++
-title = 'A Newton-like method for learning rate selection'
+title = 'A novel Newton-like method for learning rate selection'
 date = 2025-04-16T13:59:17-07:00
 draft = true
 tag = ['hessian', 'learning-rate', 'learning-rate-selection', 'gradient-descent', 'sgd', 'random-notes']
 +++
 
-In this post, we propose an alternative Newton-like method for learning
-rate selection.
+In this post, we propose a novel Newton-like method for learning
+rate selection.  The method provides a learning rate selection
+process that works as a wrapper for any optimizer
+(such as SGD, Adam, AdamW, and so on).  The method is
+perfectly general, with no constraints imposed on the optimizer.
 
 <!--more-->
 
@@ -23,121 +26,303 @@ $$
 
 ## In general
 
-Consider a smooth function \(f : \Theta \to \bR\), where \(\Theta\) is is a product of Euclidean spaces with the Frobenius inner product. Gradient descent attempts to minimize \(f\) by iterating
+Given a smooth function \(f : \bR^n \to \bR\),
+the gradient descent iterations are
 $$
-    \theta_{t+1} \leftarrow \theta_t - \alpha_t \omega(\theta_t, \nabla f(\theta_t)),
+    \theta_{t+1} \leftarrow \theta_t - \alpha_t \omega(\theta_t, \nabla f(\theta_t)).
 $$
-where \(\alpha_t \in \bR_{\geq 0}\) is the *learning rate* at step \(t\),
-and \(\omega : \Theta \times \Theta \to \Theta\) is the *optimizer*.
+Here \(\alpha_t \in \bR_{\geq 0}\) is the *learning rate* at step \(t\),
+and \(\omega : \bR^n \times \bR^n \to \bR^n\) is the *optimizer*.
 
-To simplify the notation, we will write
+Define the "value per learning rate" functions \(g_t : \bR_{\geq 0} \to \bR\) by
 $$
-    \omega_t = \omega(\theta_t, \nabla f(\theta_t)).
+    g_t(\alpha) = f(\theta_t - \alpha_t \omega(\theta_t, \nabla f(\theta_t))).
 $$
-Define the functions \(g_t : \bR_{\geq 0} \to \bR\) by
-$$
-    g_t(\alpha) = f(\theta_t - \alpha \omega_t).
-$$
-We propose to minimize \(f\) by standard gradient descent
-iterations on \(\theta\) and Newton iterations on \(\alpha\).
-That is, we propose to minimize \(f\) with the
-*Newton-like iteration*
+Following [1], [2], we propose to minimize \(f\) by the
+*Newton-like* iterations
 $$
 \left\{
 \begin{align*}
-    \theta_{t+1} &\leftarrow \theta_t - \alpha_t \omega_t \\
+    \theta_{t+1} &\leftarrow \theta_t - \alpha_t \omega(\theta_t, \nabla f(\theta_t)) \\
     \alpha_{t+1} &\leftarrow \alpha_t - \frac{g'_t(\alpha_t)}{g''_t(\alpha_t)}.
 \end{align*}
 \right.
 $$
-The numerator in the \(\alpha\) iteration is
+In the rest of this post, we will simply write
+$$
+    \omega_t = \omega(\theta_t, \nabla f(\theta_t)).
+$$
+To write the Newton-like iterations more explicitly, observe that
 $$
 \begin{align*}
-    g'_t(\alpha_t) &=
-    -\alpha_t df(\theta_t - \alpha_t \omega_t) \cdot \omega_t \\
-    &= -\alpha_t \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle. \\
+    g'_t(\alpha_t)
+    &= - df(\theta_t - \alpha_t \omega_t) \cdot \omega_t \\
+    &= - \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle. \\
 \end{align*}
 $$
-The denominator in the \(\alpha\) iteration is
+Similarly, we have
 $$
 \begin{align*}
-    g''_t(\alpha_t) &= d^2 f(\theta_t - \alpha_t \omega_t) \cdot (\omega_t, \omega_t) \\
-    &= \rmvec(\omega_t)^T H(f)(\theta_t - \alpha_t \omega_t)
-    \rmvec(\omega_t),
+    g''_t(\alpha_t)
+    &= d^2 f(\theta_t - \alpha_t \omega_t) \cdot (\omega_t, \omega_t) \\
+    &= \omega_t^T H(f)(\theta_t - \alpha_t \omega_t) \omega_t,
 \end{align*}
 $$
-where \(\rmvec\) is the vectorization map and \(H(f)(\theta)\)
-is the Hessian of \(f\) at \(\theta\).  To avoid computing
-the expensive Hessian-vector products, we will use a second-order
-Taylor series approximation.  We assume that
+where \(H(f)(\theta)\) is the Hessian matrix of \(f\) evaluated at \(\theta\).
+The Newton-like iterations are
 $$
-\begin{align*}
-    f(\theta + \delta) \approx
-    f(\theta) + df(\theta) \cdot \delta +
-    \frac{1}{2} d^2 f(\theta) \cdot (\delta, \delta)
-\end{align*}
-$$
-for each \(\theta\) and \(\delta\) sufficiently small.
-For \(\theta = \theta_t\) and \(\delta = -2\alpha_t \omega_t\), the
-approximation is
-$$
-\begin{align*}
-    f(\theta_t - 2\alpha_t \omega_t)
-    \approx
-    f(\theta_t - \alpha_t \omega_t)
-    - \alpha_t df(\theta_t - \alpha_t \omega_t) \cdot \omega_t
-    + \frac{\alpha_t^2}{2} d^2 f(\theta_t - \alpha_t \omega_t) \cdot
-    (\omega_t, \omega_t).
-\end{align*}
-$$
-Assuming \(\alpha_t > 0\) and rearranging terms, we obtain
-$$
-\begin{align*}
-    d^2 f(\theta_t - \alpha_t \omega_t) \cdot (\omega_t, \omega_t)
-    &\approx \frac{2}{\alpha_t^2} (f(\theta_t - 2 \alpha_t \omega_t) - f(\theta_t - \alpha_t \omega_t))
-    + \frac{2}{\alpha_t} df(\theta_t - \alpha_t \omega_t) \cdot \omega_t.
-\end{align*}
-$$
-To further simplify the notation, we will write
-$$
-\begin{align*}
-    \theta_t[k] = \theta_t + k \omega_t, \quad k \in \bZ,
-\end{align*}
-$$
-so that
-$$
-\begin{align*}
-    g_t'(\alpha_t) &= -\alpha_t \langle \nabla f(\theta_t[-1]), \omega_t \rangle \\
-    g_t''(\alpha_t)
-    &=
-    \frac{2}{\alpha_t^2} (f(\theta_t[-2]) - f(\theta_t[-1]))
-    + \frac{2}{\alpha_t} \langle \nabla f(\theta_t[-1]), \omega_t \rangle.
-\end{align*}
-$$
-The Newton-like iteration becomes
-$$
+\colorbox{lesserbox}
+{
+$
 \left\{
 \begin{align*}
     \theta_{t+1} &\leftarrow \theta_t - \alpha_t \omega_t \\
-    \alpha_{t+1} &\leftarrow
-    \alpha_t +
+    \alpha_{t+1} &\leftarrow \alpha_t +
     \frac{
-        \alpha_t^3 \langle \nabla f(\theta_t[-1]), \omega_t \rangle
+        \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle
     }{
-    2 (f(\theta_t[-2]) - f(\theta_t[-1]))
-        + 2 \alpha_t \langle \nabla f(\theta_t[-1]), \omega_t \rangle
+        \omega_t^T H(f)(\theta_t - \alpha_t \omega_t) \omega_t
     }.
 \end{align*}
 \right.
+$
+}
+$$
+
+We would like to avoid the impracticality of
+computing the Hessian-vector products.  To do so, we will use an approximation.
+
+## Retsinas et al. approximation
+
+The authors of [1] derive their approximation of the Hessian-vector
+products starting with a first-order Taylor series approximation of the
+partial derivatives of \(f\):
+$$
+\begin{align*}
+    d_i f (\theta_t)
+    &=
+    d_i f (\theta_t - \alpha_t \omega_t + \alpha_t \omega_t) \\
+    &\approx
+    d_i f (\theta_t - \alpha_t \omega_t)
+    +
+    \alpha_t d(d_i f)(\theta_t - \alpha_t \omega_t) \cdot \omega_t.
+\end{align*}
+$$
+We can write these approximations more explicitly as
+$$
+\begin{align*}
+    d_i f (\theta_t)
+    &\approx
+    d_i f (\theta_t - \alpha_t \omega_t)
+    +
+    \alpha_t
+    \begin{bmatrix}
+        d^2_{i,1} f(\theta_t - \alpha_t \omega_t)
+        & \cdots &
+        d^2_{i,n} f(\theta_t - \alpha_t \omega_t)
+    \end{bmatrix}
+    \omega_t.
+\end{align*}
+$$
+Stacking these quantities, we have
+$$
+\begin{align*}
+    \nabla f (\theta_t)
+    \approx
+    \nabla f (\theta_t - \alpha_t \omega_t)
+    + \alpha_t H(f)(\theta_t - \alpha_t \omega_t) \omega_t,
+\end{align*}
+$$
+where \(H(f)(\theta)\) is the Hessian matrix of \(f\) evaluated at \(\theta\).
+
+Rearranging and multiplying on the left by \(\omega_t^T\), we obtain
+$$
+\begin{align*}
+    \omega_t^T H(f)(\theta_t - \alpha_t  \omega_t) \omega_t
+    \approx
+    \frac{1}{\alpha_t}
+    \langle \nabla f (\theta_t) - \nabla f (\theta_t - \alpha_t \omega_t), \omega_t \rangle,
+    \quad
+    \alpha_t > 0.
+\end{align*}
+$$
+This reproduces Equation (7) in [1].
+
+Using this approximation, the \(\alpha\) iteration becomes
+$$
+\colorbox{lesserbox}
+{
+$
+    \alpha_{t+1} \leftarrow \alpha_t +
+    \frac{
+        \alpha_t \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle
+    }
+    {
+        \langle \nabla f (\theta_t) - \nabla f (\theta_t - \alpha_t \omega_t), \omega_t \rangle
+    }.
+$
+}
+$$
+Adding a slow-adaptation parameter \(\gamma \in (0, 1]\) gives Equation (8) in [1]:
+$$
+    \alpha_{t+1} \leftarrow \alpha_t
+    \left(
+    1 + \gamma
+    \frac{
+        \alpha_t \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle
+    }
+    {
+        \langle \nabla f (\theta_t) - \nabla f (\theta_t - \alpha_t \omega_t), \omega_t \rangle
+    }
+    \right).
+$$
+
+We are interested in how this compares to \(\alpha\) iterations
+which are derived using different approximations of the Hessian-vector
+product.
+
+## Alternative approximation
+
+Our starting point is a totally standard second-order Taylor series
+approximation of \(f\):
+$$
+\begin{align*}
+    f(\theta_t)
+    &= f(\theta_t - \alpha_t \omega_t + \alpha_t \omega_t) \\
+    &\approx
+    f(\theta_t - \alpha_t \omega_t)
+    + \alpha_t df(\theta_t - \alpha_t \omega_t) \cdot \omega_t
+    + \frac{\alpha_t^2}{2} d^2 f(\theta_t - \alpha_t \omega_t) \cdot
+    (\omega_t, \omega_t) \\
+    &=
+    f(\theta_t - \alpha_t \omega_t)
+    + \alpha_t \langle \nabla f (\theta_t - \alpha_t \omega_t), \omega_t \rangle
+    + \frac{\alpha_t^2}{2} \omega_t^T H(f)(\theta_t - \alpha_t \omega_t) \omega_t.
+\end{align*}
+$$
+Rearranging, we obtain
+$$
+\begin{align*}
+    &\omega_t^T H(f)(\theta_t - \alpha_t \omega_t) \omega_t \\
+    &\qquad \approx \frac{2}{\alpha_t^2} (f(\theta_t) - f(\theta_t - \alpha_t \omega_t))
+    - \frac{2}{\alpha_t}
+    \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle,
+    \quad \alpha_t > 0.
+\end{align*}
+$$
+Using this approximation, the \(\alpha\) iteration becomes
+$$
+\colorbox{lesserbox}
+{
+$
+\begin{align*}
+    \alpha_{t+1} &\leftarrow
+    \alpha_t +
+    \frac{
+        \alpha_t^2 \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle
+    }{
+    2 (f(\theta_t) - f(\theta_t - \alpha_t \omega_t))
+        - 2 \alpha_t \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle
+    }.
+\end{align*}
+$
+}
+$$
+How do the two approximations compare?  Setting them equal, we see that
+$$
+\begin{align*}
+    &\frac{1}{\alpha_t} \langle \nabla f(\theta_t), \omega_t \rangle
+    - \frac{1}{\alpha_t} \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t
+    \rangle \\
+    &\qquad =
+    \frac{2}{\alpha_t^2} (f(\theta_t) - f(\theta_t - \alpha_t \omega_t))
+    - \frac{2}{\alpha_t}
+    \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle
+\end{align*}
+$$
+if and only if
+$$
+\begin{align*}
+    \frac{\langle \nabla f(\theta_t), \omega_t \rangle
+    + \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t
+    \rangle}{2}
+    =
+    \frac{f(\theta_t) - f(\theta_t - \alpha_t \omega_t)}{\alpha_t}.
+\end{align*}
+$$
+From this it seems the developments in [1] involve an
+implicit first-order Taylor series approximation to the (scaled) difference
+\(f(\theta_t) - f(\theta_t - \alpha_t \omega_t)\).
+To understand the size of the error term incurred by using this
+approximation, observe that
+$$
+    \frac{f(\theta_t) - f(\theta_t - \alpha_t \omega_t)}{\alpha_t} =
+    \langle \nabla f(\theta_t), \omega_t \rangle
+    - \frac{\alpha_t}{2} \omega_t^T H(f)(\theta_t) \omega_t
+    + O(\alpha_t^3).
+$$
+On the other hand,
+$$
+    \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle
+    =
+    \langle \nabla f(\theta_t), \omega_t \rangle -
+    \alpha_t \omega_t^T H(f)(\theta_t) \omega_t + O(\alpha_t^2)
+$$
+which implies that
+$$
+\begin{align*}
+    \frac{\langle \nabla f(\theta_t), \omega_t \rangle
+    + \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t
+    \rangle}{2}
+    =
+    \langle \nabla f(\theta_t), \omega_t \rangle -
+    \frac{\alpha_t}{2} \omega_t^T H(f)(\theta_t) \omega_t + O(\alpha_t^2).
+\end{align*}
+$$
+We conclude that
+$$
+\colorbox{lesserbox}
+{
+$
+\begin{align*}
+    \frac{\langle \nabla f(\theta_t), \omega_t \rangle
+    + \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t
+    \rangle}{2}
+    =
+    \frac{f(\theta_t) - f(\theta_t - \alpha_t \omega_t)}{\alpha_t}
+    + O(\alpha_t^2).
+\end{align*}
+$
+}
+$$
+Our approximation uses the exact difference,
+so we expect it to be more accurate.
+
+Adding a slow-adaptation parameter \(\gamma \in (0, 1]\) gives the
+final \(\alpha\) iteration:
+$$
+\colorbox{magicmint}
+{
+$
+\begin{align*}
+    \alpha_{t+1} &\leftarrow
+    \alpha_t \left( 1 +
+    \gamma \frac{
+        \alpha_t^2 \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle
+    }{
+    2 (f(\theta_t) - f(\theta_t - \alpha_t \omega_t))
+        - 2 \alpha_t \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle
+    } \right).
+\end{align*}
+$
+}
 $$
 
 ## ML context
 
-In the context of machine learning, there is a single
-loss function, but typically a proxy loss function
-is used in each gradient descent iteration. Furthermore,
-the proxy loss function is allowed to vary with each gradient
-descent iteration (i.e., since the training batch data changes).
+In the context of machine learning, there is (at least
+in principle) a single loss function, but typically a proxy loss function is used in each gradient descent iteration. Furthermore,
+the proxy loss function is allowed to vary with each iteration (i.e., since the training batch data changes with each iteration).
 To account for this, we rewrite the Newton-like iteration as
 $$
 \left\{
@@ -148,8 +333,8 @@ $$
     \frac{
         \alpha_t^3 \langle \nabla L_t(\theta_t[-1]), \omega_t \rangle
     }{
-    2 (L_t(\theta_t[-2]) - L_t(\theta_t[-1]))
-        + 2 \alpha_t \langle \nabla L_t(\theta_t[-1]), \omega_t \rangle
+    2 (L_t(\theta_t) - L_t(\theta_t[-1]))
+        - 2 \alpha_t \langle \nabla L_t(\theta_t[-1]), \omega_t \rangle
     },
 \end{align*}
 \right.
@@ -157,118 +342,42 @@ $$
 where \(L_t\) is the proxy loss function at iteration \(t\) and
 \(\omega_t = \omega(\theta_t, \nabla L_t(\theta_t))\).
 
-Each Newton-like iteration requires two additional forward passes to
-compute \(L_t(\theta_t[-2]\) and \(L_t(\theta_t[-1]))\), and
-one additional backward pass to compute \(\nabla L_t(\theta_t[-1])\).
+Note that each iteration requires an extra forward pass to
+compute the *lookahead loss*
+$$
+    L_t(\theta_t[-1])
+$$
+and an extra backward pass to compute the *lookahead gradient*
+$$
+    \nabla L_t(\theta_t[-1]).
+$$
+One way of reducing the extra computation is to amortize it
+by only computing the \(\alpha\) iteration periodically.
 
-## No-lookahead version
+## Implementation
 
-One (very pragmatic) way of working around this is to
+* We clamp the learning rate between \(\alpha_\min\) and \(\alpha_\max\).
+* To avoid division by zero, we add a small
+factor \(\epsilon\) in the denominator of the \(\alpha\) iteration.
 
-* Make the \(\alpha\) iteration a slowly-updating moving average
-* Use cached loss and gradient data from previous iterations
-
+The \(\alpha\) iteration becomes
 $$
 \begin{align*}
     \alpha_{t+1} &\leftarrow
-    \alpha_t +
-    \beta \frac{
-        \alpha_t^3 \langle \nabla L_{t-1}(\theta_{t-1}[-1]), \omega_{t-1} \rangle
-    }{
-    2 (L_{t-1}(\theta_t[-2]) - L_{t-1}(\theta_t[-1]))
-        + 2 \alpha_t \langle \nabla L_t(\theta_t[-1]), \omega_t \rangle
-    },
-\end{align*}
-$$
-
-Change second-order approximation as in "Notes" section.
-Then describe the "no-lookahead" version of the method.
-
-# Notes
-
-$$
-\begin{align*}
-    f(\theta_t)
-    &=
-    f(\theta_t - \alpha_t \omega_t + \alpha_t \omega_t) \\
-    &\approx
-    f(\theta_t - \alpha_t \omega_t)
-    + \alpha_t df(\theta_t - \alpha_t \omega_t) \cdot \omega_t
-    + \frac{\alpha_t^2}{2} d^2 f(\theta_t - \alpha_t \omega_t) \cdot
-    (\omega_t, \omega_t).
-\end{align*}
-$$
-Implies
-$$
-\begin{align*}
-    d^2 f(\theta_t - \alpha_t \omega_t) \cdot
-    (\omega_t, \omega_t)
-    &\approx
-    \frac{2}{\alpha_t^2} (f(\theta_t)
-    - f(\theta_t - \alpha_t \omega_t))
-    - \frac{2}{\alpha_t} df(\theta_t - \alpha_t \omega_t) \cdot \omega_t
-\end{align*}
-$$
-Alpha update is
-$$
-\begin{align*}
-    \alpha_{t+1} &\leftarrow
-    \alpha_t +
-    \frac{
-        \alpha_t^3 \langle \nabla f(\theta_t[-1]), \omega_t \rangle
-    }{
-        2 (f(\theta_t)
-        - f(\theta_t[-1]))
-        - 2 \alpha_t \langle \nabla f(\theta_t[-1]), \omega_t \rangle
-    }.
-\end{align*}
-$$
-ML context it's
-$$
-\begin{align*}
-    \alpha_{t+1} &\leftarrow
+    \mathrm{clamp}\left(
     \alpha_t +
     \frac{
         \alpha_t^3 \langle \nabla L_t(\theta_t[-1]), \omega_t \rangle
     }{
-        2 (L_t(\theta_t)
-        - L_t(\theta_t[-1]))
+    \epsilon + 2 (L_t(\theta_t) - L_t(\theta_t[-1]))
         - 2 \alpha_t \langle \nabla L_t(\theta_t[-1]), \omega_t \rangle
-    }.
-\end{align*}
-$$
-Approximate
-$$
-\begin{align*}
-    RHS &=
-    \alpha_t +
-    \beta
-    \frac{
-        \alpha_t^3 \langle \nabla L_t(\theta_{t+1}), \omega_t \rangle
-    }{
-        2 (L_t(\theta_t)
-        - L_t(\theta_{t+1}))
-        - 2 \alpha_t \langle \nabla L_t(\theta_{t+1}), \omega_t \rangle
-    } \\
-    &\approx
-    \alpha_t +
-    \beta
-    \frac{
-        \alpha_t^3 \langle \nabla L_{t+1}(\theta_{t+1}), \omega_t \rangle
-    }{
-        2 (L_t(\theta_t)
-        - L_{t+1}(\theta_{t+1}))
-        - 2 \alpha_t \langle \nabla L_{t+1}(\theta_{t+1}), \omega_t \rangle
-    } \\
-    &\approx
-    \alpha_t +
-    \beta
-    \frac{
-        \alpha_t^3 \langle \nabla L_t(\theta_t), \omega_t \rangle
-    }{
-        2 (L_{t-1}(\theta_{t-1})
-        - L_t(\theta_t))
-        - 2 \alpha_t \langle \nabla L_t(\theta_t), \omega_t \rangle
     }
+    \right).
 \end{align*}
 $$
+
+## References
+
+1. G. Retsinas, G. Sfikas, P. Filntisis and P. Maragos, "Newton-Based Trainable Learning Rate," ICASSP 2023
+2. G. Retsinas, G. Sfikas, P. Filntisis and P. Maragos, "Trainable Learning Rate",
+2022
