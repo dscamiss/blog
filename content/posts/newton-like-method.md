@@ -1,8 +1,8 @@
 +++
 title = 'A novel Newton-like method for learning rate selection'
 date = 2025-04-16T13:59:17-07:00
-draft = true
-tag = ['hessian', 'learning-rate', 'learning-rate-selection', 'gradient-descent', 'sgd', 'random-notes']
+draft = false
+tag = ['hessian', 'learning-rate', 'learning-rate-selection', 'gradient-descent', 'sgd', 'random-notes', 'newton']
 +++
 
 In this post, we propose a novel Newton-like method for learning
