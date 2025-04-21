@@ -11,6 +11,8 @@ process that works as a wrapper for any optimizer
 (such as SGD, Adam, AdamW, and so on).  The method is
 perfectly general, with no constraints imposed on the optimizer.
 
+The PyTorch implementation is available [here](https://github.com/dscamiss/newt/).
+
 <!--more-->
 
 $$
@@ -251,7 +253,7 @@ $$
 \end{align*}
 $$
 From this it seems the developments in [1] involve an
-implicit first-order Taylor series approximation to the (scaled) difference
+implicit first-order Taylor series approximation to the *lookahead value difference*
 \(f(\theta_t) - f(\theta_t - \alpha_t \omega_t)\).
 To understand the size of the error term incurred by using this
 approximation, observe that
@@ -295,8 +297,17 @@ $
 $
 }
 $$
-Our approximation uses the exact difference,
-so we expect it to be more accurate.
+This means that the developments in [1] incur an extra \(O(\alpha_t^2)\) error term by approximating the lookahead value difference.
+
+There seems to be no advantage to this,
+since in any case we *must* compute \(f(\theta_t)\) and
+\(f(\theta_t - \alpha_t \omega_t)\), the latter as the
+"forward" part of the
+ \(\nabla f(\theta - \alpha_t \omega_t)\) computation.
+
+*Thus we expect the Newton-like method based on the approximation
+in this section improves the results of [1], in terms of convergence
+behavior during training.*
 
 Adding a slow-adaptation parameter \(\gamma \in (0, 1]\) gives the
 final \(\alpha\) iteration:
@@ -321,60 +332,45 @@ $$
 ## ML context
 
 In the context of machine learning, there is (at least
-in principle) a single loss function, but typically a proxy loss function is used in each gradient descent iteration. Furthermore,
+in principle) a single loss function, but typically a proxy loss function
+is used in each gradient descent iteration. Furthermore,
 the proxy loss function is allowed to vary with each iteration (i.e., since the training batch data changes with each iteration).
-To account for this, we rewrite the Newton-like iteration as
+To account for this, we rewrite the Newton-like iteration from the previous
+section as
 $$
+\colorbox{magicmint}
+{
+$
 \left\{
 \begin{align*}
     \theta_{t+1} &\leftarrow \theta_t - \alpha_t \omega_t \\
     \alpha_{t+1} &\leftarrow
-    \alpha_t +
-    \frac{
-        \alpha_t^3 \langle \nabla L_t(\theta_t[-1]), \omega_t \rangle
+    \alpha_t \left( 1 +
+    \gamma \frac{
+        \alpha_t^2 \langle \nabla L_t(\theta_t - \alpha_t \omega_t), \omega_t \rangle
     }{
-    2 (L_t(\theta_t) - L_t(\theta_t[-1]))
-        - 2 \alpha_t \langle \nabla L_t(\theta_t[-1]), \omega_t \rangle
-    },
+    2 (L_t(\theta_t) - L_t(\theta_t - \alpha_t \omega_t))
+        - 2 \alpha_t \langle \nabla L_t(\theta_t - \alpha_t \omega_t), \omega_t \rangle
+    } \right),
 \end{align*}
 \right.
+$
+}
 $$
 where \(L_t\) is the proxy loss function at iteration \(t\) and
 \(\omega_t = \omega(\theta_t, \nabla L_t(\theta_t))\).
 
-Note that each iteration requires an extra forward pass to
-compute the *lookahead loss*
-$$
-    L_t(\theta_t[-1])
-$$
-and an extra backward pass to compute the *lookahead gradient*
-$$
-    \nabla L_t(\theta_t[-1]).
-$$
-One way of reducing the extra computation is to amortize it
-by only computing the \(\alpha\) iteration periodically.
-
 ## Implementation
 
-* We clamp the learning rate between \(\alpha_\min\) and \(\alpha_\max\).
-* To avoid division by zero, we add a small
+* The wrapped optimizer needs to have "parameter update" tracking; this is not
+something that is currently available in PyTorch.
+* We clamp the learning rate between \(\alpha_\min\) and \(\alpha_\max\) to
+prevent it from vanishing or growing without bound during training.
+The upper bound on \(\alpha\) is put in place because the approximations we use are inherently local, and may be misleading about the shape of the loss function away
+from the current parameter values.  In other words, we want to avoid making a
+big step across the loss landscape based on local information.
+ * To avoid division by zero, we add a small
 factor \(\epsilon\) in the denominator of the \(\alpha\) iteration.
-
-The \(\alpha\) iteration becomes
-$$
-\begin{align*}
-    \alpha_{t+1} &\leftarrow
-    \mathrm{clamp}\left(
-    \alpha_t +
-    \frac{
-        \alpha_t^3 \langle \nabla L_t(\theta_t[-1]), \omega_t \rangle
-    }{
-    \epsilon + 2 (L_t(\theta_t) - L_t(\theta_t[-1]))
-        - 2 \alpha_t \langle \nabla L_t(\theta_t[-1]), \omega_t \rangle
-    }
-    \right).
-\end{align*}
-$$
 
 ## References
 
