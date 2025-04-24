@@ -171,7 +171,7 @@ $$
     \left(
     1 + \gamma
     \frac{
-        \alpha_t \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle
+        \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle
     }
     {
         \langle \nabla f (\theta_t) - \nabla f (\theta_t - \alpha_t \omega_t), \omega_t \rangle
@@ -223,8 +223,8 @@ $
     \frac{
         \alpha_t^2 \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle
     }{
-    2 (f(\theta_t) - f(\theta_t - \alpha_t \omega_t))
-        - 2 \alpha_t \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle
+    2 (f(\theta_t) - f(\theta_t - \alpha_t \omega_t)
+        - \alpha_t \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle)
     }.
 \end{align*}
 $
@@ -319,10 +319,10 @@ $
     \alpha_{t+1} &\leftarrow
     \alpha_t \left( 1 +
     \gamma \frac{
-        \alpha_t^2 \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle
+        \alpha_t \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle
     }{
-    2 (f(\theta_t) - f(\theta_t - \alpha_t \omega_t))
-        - 2 \alpha_t \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle
+    2 (f(\theta_t) - f(\theta_t - \alpha_t \omega_t)
+        - \alpha_t \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle)
     } \right).
 \end{align*}
 $
@@ -332,9 +332,9 @@ $$
 ## ML context
 
 In the context of machine learning, there is (at least
-in principle) a single loss function, but typically a proxy loss function
-is used in each gradient descent iteration. Furthermore,
-the proxy loss function is allowed to vary with each iteration (i.e., since the training batch data changes with each iteration).
+in principle) a single loss function to be minimized. Typically, a
+distinct proxy loss function is used in each gradient descent iteration,
+since the training batch data changes with each iteration.
 To account for this, we rewrite the Newton-like iteration from the previous
 section as
 $$
@@ -347,10 +347,10 @@ $
     \alpha_{t+1} &\leftarrow
     \alpha_t \left( 1 +
     \gamma \frac{
-        \alpha_t^2 \langle \nabla L_t(\theta_t - \alpha_t \omega_t), \omega_t \rangle
+        \alpha_t \langle \nabla L_t(\theta_t - \alpha_t \omega_t), \omega_t \rangle
     }{
-    2 (L_t(\theta_t) - L_t(\theta_t - \alpha_t \omega_t))
-        - 2 \alpha_t \langle \nabla L_t(\theta_t - \alpha_t \omega_t), \omega_t \rangle
+    2 (L_t(\theta_t) - L_t(\theta_t - \alpha_t \omega_t)
+        - \alpha_t \langle \nabla L_t(\theta_t - \alpha_t \omega_t), \omega_t \rangle)
     } \right),
 \end{align*}
 \right.
