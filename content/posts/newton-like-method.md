@@ -1,12 +1,12 @@
 +++
-title = 'A novel Newton-like method for learning rate selection'
+title = 'The Newton-like method for learning rate selection'
 date = 2025-04-16T13:59:17-07:00
 draft = false
 tag = ['hessian', 'learning-rate', 'learning-rate-selection', 'gradient-descent', 'sgd', 'random-notes', 'newton']
 +++
 
-In this post, we propose a novel Newton-like method for learning
-rate selection.  The method provides a learning rate selection
+In this post, we review the Newton-like method for learning
+rate selection.  This provides a learning rate selection
 process that works as a wrapper for any optimizer
 (such as SGD, Adam, AdamW, and so on).  The method is
 perfectly general, with no constraints imposed on the optimizer.
@@ -305,9 +305,9 @@ since in any case we *must* compute \(f(\theta_t)\) and
 "forward" part of the
  \(\nabla f(\theta - \alpha_t \omega_t)\) computation.
 
-*Thus we expect the Newton-like method based on the approximation
+Thus we expect the Newton-like method based on the approximation
 in this section improves the results of [1], in terms of convergence
-behavior during training.*
+behavior during training.
 
 Adding a slow-adaptation parameter \(\gamma \in (0, 1]\) gives the
 final \(\alpha\) iteration:
