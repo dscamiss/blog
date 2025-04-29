@@ -183,7 +183,7 @@ We are interested in how this compares to \(\alpha\) iterations
 which are derived using different approximations of the Hessian-vector
 product.
 
-## Alternative approximation
+## Alternative approximation 1
 
 Our starting point is a totally standard second-order Taylor series
 approximation of \(f\):
@@ -253,7 +253,7 @@ $$
 \end{align*}
 $$
 From this it seems the developments in [1] involve an
-implicit first-order Taylor series approximation to the *lookahead value difference*
+implicit first-order Taylor series approximation to the lookahead value difference
 \(f(\theta_t) - f(\theta_t - \alpha_t \omega_t)\).
 To understand the size of the error term incurred by using this
 approximation, observe that
@@ -283,9 +283,6 @@ $$
 $$
 We conclude that
 $$
-\colorbox{lesserbox}
-{
-$
 \begin{align*}
     \frac{\langle \nabla f(\theta_t), \omega_t \rangle
     + \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t
@@ -294,27 +291,18 @@ $
     \frac{f(\theta_t) - f(\theta_t - \alpha_t \omega_t)}{\alpha_t}
     + O(\alpha_t^2).
 \end{align*}
-$
-}
 $$
 This means that the developments in [1] incur an extra \(O(\alpha_t^2)\) error term by approximating the lookahead value difference.
 
 There seems to be no advantage to this,
-since in any case we *must* compute \(f(\theta_t)\) and
+since in any case we need to compute \(f(\theta_t)\) and
 \(f(\theta_t - \alpha_t \omega_t)\), the latter as the
 "forward" part of the
  \(\nabla f(\theta - \alpha_t \omega_t)\) computation.
 
-Thus we expect the Newton-like method based on the approximation
-in this section improves the results of [1], in terms of convergence
-behavior during training.
-
 Adding a slow-adaptation parameter \(\gamma \in (0, 1]\) gives the
 final \(\alpha\) iteration:
 $$
-\colorbox{magicmint}
-{
-$
 \begin{align*}
     \alpha_{t+1} &\leftarrow
     \alpha_t \left( 1 +
@@ -325,8 +313,64 @@ $
         - \alpha_t \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle)
     } \right).
 \end{align*}
+$$
+
+## Alternative approximation 2
+
+As in the previous section, we start with a second-order Taylor series
+approximation of \(f\):
+$$
+\begin{align*}
+    f(\theta_t - \alpha_t \omega_t)
+    &\approx
+    f(\theta_t)
+    + \alpha_t \langle \nabla f (\theta_t - \alpha_t \omega_t), \omega_t \rangle
+    + \frac{\alpha_t^2}{2} \omega_t^T H(f)(\theta_t - \alpha_t \omega_t) \omega_t.
+\end{align*}
+$$
+From this it follows that
+$$
+    \frac{f(\theta_t - \alpha_t \omega_t) + f(\theta_t + \alpha_t \omega_t) - 2 f(\theta_t)}{\alpha_t^2} \approx
+    \omega_t^T H(f)(\theta_t - \alpha_t \omega_t) \omega_t.
+$$
+Using this approximation, the \(\alpha\) iteration becomes
+$$
+\colorbox{lesserbox}
+{
+$
+\begin{align*}
+    \alpha_{t+1} &\leftarrow
+    \alpha_t +
+    \frac{
+        \alpha_t^2 \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle
+    }{
+        f(\theta_t - \alpha_t \omega_t) + f(\theta_t + \alpha_t \omega_t) - 2f(\theta_t)
+    }.
+\end{align*}
 $
 }
+$$
+
+Adding a slow-adaptation parameter \(\gamma \in (0, 1]\) gives the
+final \(\alpha\) iteration:
+$$
+\begin{align*}
+    \alpha_{t+1} &\leftarrow
+    \alpha_t \left( 1 +
+    \gamma \frac{
+        \alpha_t \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle
+    }{
+        f(\theta_t - \alpha_t \omega_t) + f(\theta_t + \alpha_t \omega_t) - 2f(\theta_t)
+    }
+    \right).
+\end{align*}
+$$
+
+The numerator can also be estimated without gradient computations,
+since
+$$
+    \langle \nabla f(\theta_t - \alpha_t \omega_t), \omega_t \rangle
+    \approx \frac{f(\theta_t + \alpha_t \omega_t) - f(\theta_t - \alpha_t \omega_t)}{2 \alpha_t}.
 $$
 
 ## ML context
@@ -335,23 +379,20 @@ In the context of machine learning, there is (at least
 in principle) a single loss function to be minimized. Typically, a
 distinct proxy loss function is used in each gradient descent iteration,
 since the training batch data changes with each iteration.
-To account for this, we rewrite the Newton-like iteration from the previous
-section as
+To account for this, we can rewrite the Newton-like iterations as
 $$
-\colorbox{magicmint}
+\colorbox{lesserbox}
 {
 $
 \left\{
 \begin{align*}
     \theta_{t+1} &\leftarrow \theta_t - \alpha_t \omega_t \\
-    \alpha_{t+1} &\leftarrow
-    \alpha_t \left( 1 +
-    \gamma \frac{
-        \alpha_t \langle \nabla L_t(\theta_t - \alpha_t \omega_t), \omega_t \rangle
+    \alpha_{t+1} &\leftarrow \alpha_t +
+    \frac{
+        \langle \nabla L_t(\theta_t - \alpha_t \omega_t), \omega_t \rangle
     }{
-    2 (L_t(\theta_t) - L_t(\theta_t - \alpha_t \omega_t)
-        - \alpha_t \langle \nabla L_t(\theta_t - \alpha_t \omega_t), \omega_t \rangle)
-    } \right),
+        \omega_t^T H(L_t)(\theta_t - \alpha_t \omega_t) \omega_t
+    }.
 \end{align*}
 \right.
 $
@@ -360,17 +401,26 @@ $$
 where \(L_t\) is the proxy loss function at iteration \(t\) and
 \(\omega_t = \omega(\theta_t, \nabla L_t(\theta_t))\).
 
+For example, the \(\alpha\) iteration using the
+Retsinas et al. approximation is
+$$
+\left\{
+\begin{align*}
+    \alpha_{t+1} \leftarrow
+    \alpha_t +
+    \frac{
+        \alpha_t \langle \nabla L_t(\theta_t - \alpha_t \omega_t), \omega_t \rangle
+    }{
+        \langle \nabla L_t(\theta_t) - \nabla L_t(\theta_t - \alpha_t \omega_t), \omega_t \rangle)
+    }.
+\end{align*}
+\right.
+$$
+
 ## Implementation
 
-* The wrapped optimizer needs to have "parameter update" tracking; this is not
-something that is currently available in PyTorch.
-* We clamp the learning rate between \(\alpha_\min\) and \(\alpha_\max\) to
-prevent it from vanishing or growing without bound during training.
-The upper bound on \(\alpha\) is put in place because the approximations we use are inherently local, and may be misleading about the shape of the loss function away
-from the current parameter values.  In other words, we want to avoid making a
-big step across the loss landscape based on local information.
- * To avoid division by zero, we add a small
-factor \(\epsilon\) in the denominator of the \(\alpha\) iteration.
+To prevent \(\alpha\) from vanishing or growing without bound,
+we can clamp it in addition to making it adapt slowly.
 
 ## References
 
