@@ -25,7 +25,8 @@ $$
 ## Scaled dot-product self-attention
 
 Throughout, \(W_Q, W_K \in \bR^{d \times d_k}\) and \(W_V \in \bR^{d \times d_v}\)
-are matrices such that \(W_Q W_K^t \neq 0\).
+are matrices such that \(W_Q W_K^t \neq 0_{d \times d}\).  For reasons that will be made
+clear below, we also assume that \(n > 1\).
 
 The *scaled dot-product self-attention map* is defined by
 $$
@@ -66,37 +67,75 @@ are stacked up as row vectors.
 Using the chain rule, the total derivative of \(\Att\) is
 $$
     d \Att(X) \cdot \tilde{X}
-    = M X W_V
-    + \vec{\sigma}(P) \tilde{X} W_V,
+    = M + \vec{\sigma}(P) \tilde{X} W_V,
 $$
 where
 $$
-    M = \begin{bmatrix}
-        \left( d \sigma(P^t e_1)^t \cdot (X A^t \tilde{X}^t + \tilde{X} A^t X^t) e_1 \right)^t \\
+    M \equiv M(X, \tilde{X}) = \begin{bmatrix}
+        \left( d \sigma(P^t e_1) \cdot (X A^t \tilde{X}^t + \tilde{X} A^t X^t) e_1 \right)^t X W_V \\
         \vdots \\
-        \left( d \sigma(P^t e_n)^t \cdot (X A^t \tilde{X}^t + \tilde{X} A^t X^t) e_n \right)^t \\
+        \left( d \sigma(P^t e_n) \cdot (X A^t \tilde{X}^t + \tilde{X} A^t X^t) e_n \right)^t X W_V \\
     \end{bmatrix}.
 $$
+--- NEED TO REDO ANALYSIS FROM HERE ---
 
 ## Lipschitz considerations
 
 Set \(r_i\) to be the transpose of the \(i\)th row of \(M\), so that
 $$
-    r_i = d \sigma(P^t e_i)^t \cdot (X A^t \tilde{X}^t + \tilde{X} A^t X^t) e_i.
+    r_i = d \sigma(P^t e_i) \cdot (X A^t \tilde{X}^t + \tilde{X} A^t X^t) e_i.
 $$
-By assumption \(A \neq 0_{n \times n}\), so we can choose \(\tilde{X}\) and an index \(i\) such that
-$$
-    v = A^t \tilde{X}^t e_i \neq 0_{n \times 1}.
-$$
-If \(X\) is such that \(X^t e_i = 0_{d \times 1}\), then
-$$
-    P^t e_i = X A^t X^t e_i = 0_{n \times 1}.
-$$
-From this, it follows that
+
+For the sake of argument, suppose that we have chosen
+* \(\tilde{X}\) and \(i\) such that \(v = A^t \tilde{X}^t e_i \neq 0_{n \times 1}\), and
+* \(X\) such that \(X^t e_i = 0_{d \times 1}\).
+
+With these choices, we have \(P^t e_i = X A^t X^t e_i = 0_{n \times 1}\)
+and consequently
 $$
 \begin{align*}
-    s(P^t e_i) &= \frac{1}{n} 1_{n \times 1} \\
-    ds(P^t e_i) &= \frac{1}{n} I_n - \frac{1}{n^2} 1_{n \times 1} 1_{n \times 1}^t,
+    r_i = \left(
+        \frac{1}{n} I_n - \frac{1}{n^2} 1_{n \times 1} 1_{n \times 1}^t
+    \right) Xv,
 \end{align*}
 $$
 where \(I_n\) is the \(n\)-dimensional identity matrix.
+
+Specializing the choice of \(X\), suppose that
+$$
+    X = C e_j \frac{v^t}{\| v \|^2},
+$$
+where \(C > 0\) and \(i \neq j\) (such a \(j\)
+exists since \(n > 1\)).  Then \(X^t e_i = 0_{d \times 1}\) and
+$$
+    r_i = C \left(
+        \frac{1}{n} I_n - \frac{1}{n^2} 1_{n \times 1} 1_{n \times 1}^t
+    \right) e_j.
+$$
+In particular, the \(j\)th component of \(r_i\) is
+$$
+    e_j^t r_i = C \left(
+        \frac{1}{n} - \frac{1}{n^2}
+    \right).
+$$
+
+## Main result
+
+In this section, we assume that \(\bR^{n \times d}\) has the
+\(\infty\)-norm.  The Lipschitz constant of \(\Att\) is
+$$
+\begin{align*}
+    L
+    &= \sup_{X \in \bR^{n \times d}} \| d \Att (X) \| \\
+    &= \sup_{X, \tilde{X} \in \bR^{n \times d}, \|\tilde{X}\| = 1}
+     \| d \Att(X) \cdot \tilde{X} \| \\
+    &= \sup_{X, \tilde{X} \in \bR^{n \times d}, \|\tilde{X}\| = 1} \| MXW_V + \vec{\sigma}(P) \tilde{X} W_V \| \\
+    &\geq \sup_{X, \tilde{X} \in \bR^{n \times d}, \|\tilde{X}\| = 1} | \| MXW_V \| - \| \vec{\sigma}(P) \tilde{X} W_V \| | \\
+    &\geq \sup_{X, \tilde{X} \in \bR^{n \times d}, \|\tilde{X}\| = 1} \| MXW_V \| - \| \vec{\sigma}(P) \tilde{X} W_V \| \\
+    &\geq \sup_{X, \tilde{X} \in \bR^{n \times d}, \|\tilde{X}\| = 1} \| MXW_V \| - \| W_V \|
+\end{align*}
+$$
+We will show that the first term can be made arbitrarily large.  We have
+$$
+    \sup_{X, \tilde{X} \in \bR^{n \times d}, \|\tilde{X}\| = 1} \| MXW_V \|
+$$
