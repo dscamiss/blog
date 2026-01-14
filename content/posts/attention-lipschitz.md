@@ -10,8 +10,11 @@ tag = ['attention', 'lipschitz', 'random-notes']
 In this post, we prove that the scaled dot-product self-attention
 map is not Lipschitz for unbounded inputs.  This fact is
 already known in the literature, for example as [1, Theorem 3.1].
-Our proof is more straightforward, since it avoids computing individual
-components of the self-attention map's Jacobian matrix.
+The proof presented here differs in two important ways.  First, the proof
+is component-free, in the sense that we avoid computing
+individual components of Jacobian matrices.
+Second, we more precisely identify the parameters for which the
+self-attention map is not Lipschitz.
 
 <!--more-->
 
@@ -24,11 +27,10 @@ $$
 
 ## Scaled dot-product self-attention
 
-Throughout, \(W_Q, W_K \in \bR^{d \times d_k}\) and \(W_V \in \bR^{d \times d_v}\)
-are matrices such that \(W_Q W_K^t \neq 0\).  For reasons that will be made
-clear below, we also assume that \(n > 1\).
+Throughout this post, \(W_Q, W_K \in \bR^{d \times d_k}\), \(W_V \in \bR^{d \times d_v}\),
+and \(n > 1\).
 
-The *scaled dot-product self-attention map* is defined by
+The *scaled dot-product self-attention map* [2] is defined by
 $$
 \begin{align*}
     \Att : \bR^{n \times d} &\to \bR^{n \times d_v} \\
@@ -43,7 +45,7 @@ where \(\vec{\sigma} : \bR^{n \times n} \to \bR^{n \times n}\) is the standard
 
 To keep the notation concise, we write
 $$
-    A = \frac{W_Q W_K^t}{\sqrt{d}} \neq 0 \qquad \mbox{and} \qquad
+    A = \frac{W_Q W_K^t}{\sqrt{d}} \qquad \mbox{and} \qquad
     P \equiv P(X) = X A X^t.
 $$
 Using this shorthand, we have
@@ -77,74 +79,12 @@ $$
         \left( d \sigma(P^t e_n) \cdot (X A^t \tilde{X}^t + \tilde{X} A^t X^t) e_n \right)^t X W_V \\
     \end{bmatrix}.
 $$
-
-## Lipschitz considerations
-
-The \(i\)th row of \(M(X, \tilde{X})\) is
+In the next section, we will use the well-known fact that
 $$
-    M(X, \tilde{X})_i =
-    \left( d \sigma(P^t e_i) \cdot (X A^t \tilde{X}^t + \tilde{X} A^t X^t) e_i \right)^t X W_V.
+    d \sigma(x) = \mathrm{diag}(\sigma(x)) - \sigma(x) \sigma(x)^t,
 $$
-Suppose that we have chosen
-* \(\tilde{X}\) such that \(v = A^t \tilde{X}^t e_i \neq \mathbf{0}\), and
-* \(X\) such that \(X^t e_i = \mathbf{0}\).
-
-Then \(P^t e_i = X A^t X^t e_i = \mathbf{0}\) and consequently
-$$
-\begin{align*}
-    M(X, \tilde{X})_i
-    &= \left(
-        d \sigma(\mathbf{0}) \cdot (X A^t \tilde{X}^t + \tilde{X} A^t X^t) e_i
-    \right)^t X W_V \\
-    &= \left(
-        d \sigma(\mathbf{0}) \cdot X A^t \tilde{X}^t e_i
-    \right)^t X W_V \\
-    &= \left(
-        d \sigma(\mathbf{0}) \cdot X v
-    \right)^t X W_V \\
-    &= \left(
-    \left(
-        \frac{1}{n} I_n - \frac{1}{n^2} \mathbf{1} \mathbf{1}^t
-    \right) Xv
-    \right)^t X W_V,
-\end{align*}
-$$
-where \(I_n\) is the \(n\)-dimensional identity matrix.  Here we have
-used the fact that
-$$
-    d\sigma(x) \cdot \tilde{x} = (\mathrm{diag}(x)
-    - \sigma(x) \sigma(x)^t) \tilde{x}.
-$$
-
-In particular, suppose that
-$$
-    X = C e_j \frac{v^t}{\| v \|^2},
-$$
-where \(C > 0\) and \(i \neq j\) (note that such an index \(j\)
-exists since \(n > 1\)).
-
-Clearly \(X\) satisfies \(X^t e_i = \mathbf{0}\) and
-$$
-\begin{align*}
-    M(X, \tilde{X})_i
-    &= \left(
-        \left(
-        \frac{1}{n} I_n - \frac{1}{n^2} \mathbf{1} \mathbf{1}^t
-        \right)
-        C e_j \frac{v^t v}{\| v \|^2}
-        \right)^t C e_j \frac{v^t}{\| v \|^2} W_V \\
-    &= C^2 e_j^t
-        \left(
-        \frac{1}{n} I_n - \frac{1}{n^2} \mathbf{1} \mathbf{1}^t
-        \right)
-        e_j \frac{v^t}{\| v \|^2} W_V \\
-    &= \frac{C^2}{\| v \|^2}
-        \left(
-        \frac{1}{n} - \frac{1}{n^2}
-        \right)
-        v^t W_V.
-\end{align*}
-$$
+where \(\mathrm{diag}(x)\) is the diagonal matrix whose \((i,i)\)th entry is
+\(x^i\).
 
 ## Main result
 
@@ -289,3 +229,14 @@ $$
 $$
 Since the right-hand side can be made arbitrarily large, \(\Att\) is not Lipschitz.
 \(\blacksquare\)
+
+## Extension to multi-head attention
+
+TODO
+
+## References
+
+1. *The Lipschitz Constant of Self-Attention*, Hyunjik Kim, George Papamakarios, Andriy Mnih.
+Proceedings of the 38th International Conference on Machine Learning, PMLR 139:5562-5571, 2021.
+2. *Attention is All you Need*, Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit,
+Llion Jones, Aidan N Gomez, Łukasz Kaiser, Illia Polosukhin. Advances in Neural Information Processing Systems 30, 2017.
