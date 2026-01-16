@@ -8,7 +8,7 @@ tag = ['attention', 'lipschitz', 'random-notes']
 ## Introduction
 
 In this post, we prove that the scaled dot-product self-attention
-map is not Lipschitz for unbounded inputs.  This fact is
+map is not Lipschitz (for unbounded inputs).  This fact is
 already known in the literature, for example as [1, Theorem 3.1].
 The proof presented here differs in two important ways.  First, the proof
 is component-free, in the sense that we avoid computing
@@ -27,41 +27,41 @@ $$
 
 ## Scaled dot-product self-attention
 
-Throughout this post, \(W_Q, W_K \in \bR^{d \times d_k}\), \(W_V \in \bR^{d \times d_v}\),
+In this section, \(W_Q, W_K \in \bR^{d \times d_K}\), \(W_V \in \bR^{d \times d_V}\),
 and \(n > 1\).
 
 The *scaled dot-product self-attention map* [2] is defined by
 $$
 \begin{align*}
-    \Att : \bR^{n \times d} &\to \bR^{n \times d_v} \\
+    \Att : \bR^{n \times d} &\to \bR^{n \times d_V} \\
     X &\mapsto \Att(X) = \vec{\sigma}
     \left(
-        \frac{X W_Q (X W_K)^t}{\sqrt{d_k}}
+        \frac{X W_Q (X W_K)^t}{\sqrt{d_K}}
     \right) X W_V,
 \end{align*}
 $$
 where \(\vec{\sigma} : \bR^{n \times n} \to \bR^{n \times n}\) is the standard
-[softmax map]({{< ref "softmax-derivatives" >}}) applied row-wise.
-
+softmax map applied row-wise.
+We say that the matrices \(W_Q, W_K, W_V\) are the *parameters* of \(\Att\).
 To keep the notation concise, we write
 $$
-    A = \frac{W_Q W_K^t}{\sqrt{d}} \qquad \mbox{and} \qquad
-    P \equiv P(X) = X A X^t.
+    A = \frac{W_Q W_K^t}{\sqrt{d_K}} \qquad \mbox{and} \qquad
+    P(X) = X A X^t.
 $$
-Using this shorthand, we have
+With this shorthand, we have
 $$
-    \Att(X) = \vec{\sigma}(P) X W_V
+    \Att(X) = \vec{\sigma}(P(X)) X W_V
 $$
 or more explicitly
 $$
     \Att(X) = \begin{bmatrix}
-        \sigma(P^t e_1)^t \\
+        \sigma(P(X)^t e_1)^t \\
         \vdots \\
-        \sigma(P^t e_n)^t
+        \sigma(P(X)^t e_n)^t
     \end{bmatrix} X W_V,
 $$
 where \(\sigma : \bR^n \to \bR^n\) is the standard softmax map and \(e_i\)
-is the \(i\)th Euclidean basis vector.  Note
+is the \(i\)th standard basis vector in \(\bR^n\).  Note
 that the transpose operations are necessary to ensure that (1) the inputs
 to \(\sigma\) are column vectors and (2) the outputs of \(\sigma\)
 are stacked up as row vectors.
@@ -69,15 +69,15 @@ are stacked up as row vectors.
 By the chain rule, the total derivative of \(\Att\) is
 $$
     d \Att(X) \cdot \tilde{X}
-    = M(X, \tilde{X}) + \vec{\sigma}(P) \tilde{X} W_V,
+    = M(X, \tilde{X}) + \vec{\sigma}(P(X)) \tilde{X} W_V,
 $$
 where
 $$
     M(X, \tilde{X}) = \begin{bmatrix}
-        \left( d \sigma(P^t e_1) \cdot (X A^t \tilde{X}^t + \tilde{X} A^t X^t) e_1 \right)^t X W_V \\
+        \left( d \sigma(P(X)^t e_1) \cdot (X A^t \tilde{X}^t + \tilde{X} A^t X^t) e_1 \right)^t \\
         \vdots \\
-        \left( d \sigma(P^t e_n) \cdot (X A^t \tilde{X}^t + \tilde{X} A^t X^t) e_n \right)^t X W_V \\
-    \end{bmatrix}.
+        \left( d \sigma(P(X)^t e_n) \cdot (X A^t \tilde{X}^t + \tilde{X} A^t X^t) e_n \right)^t \\
+    \end{bmatrix} X W_V.
 $$
 In the next section, we will use the well-known fact that
 $$
@@ -88,9 +88,9 @@ where \(\mathrm{diag}(x)\) is the diagonal matrix whose \((i,i)\)th entry is
 
 ## Main result
 
-*Definition*: We say that \(v\) is a *coupling vector* if it satisfies:
+*Definition*: We say that \(v \in \bR^{d}\) is a *coupling vector for \(\Att\)* if it satisfies:
 * \(v \neq \mathbf{0}\),
-* \(v = A^t u\) with \(\| u \|_\infty = 1\), and
+* \(v = A^t u\) with \(\| u \| = 1\), and
 * \(v^t W_V \neq \mathbf{0}\).
 
 <!--
@@ -99,22 +99,27 @@ where \(\mathrm{diag}(x)\) is the diagonal matrix whose \((i,i)\)th entry is
            <==> A W_V = 0 ==> There does not exist a coupling vector
 -->
 
-*Lemma*: There exists a coupling vector \(v\) if and only if \(A W_V \neq \mathbf{0}\).
+*Lemma*: There exists a coupling vector for \(\Att\) if and only if \(A W_V \neq \mathbf{0}\).
 
 *Proof*: For the "if" direction, suppose that \(A W_V \neq \mathbf{0}\).
-Choose \(i\) such that \(c = A W_V e_i \neq \mathbf{0}\) and set
+Choose \(i\) such that \(c = A W_V e_i' \neq \mathbf{0}\), where \(e_i'\) is
+the \(i\)th standard basis vector in \(\bR^{d_V}\), and set
 \(v = A^t u\), where \(u = c / \| c \|_\infty\).
 To see that \(v \neq \mathbf{0}\), assume to the contrary that \(v = \mathbf{0}\).
-Then \(c^t c = c^t A W_V e_i = \| c \|_\infty v^t W_V e_i = 0\), which contradicts the
+Then
+$$
+    \| c \|^2_2 = c^t c = c^t A W_V e_i = \| c \|_\infty v^t W_V e_i' = 0,
+$$
+which contradicts the
 fact that \(c \neq \mathbf{0}\).  By construction, \(v = A^t u\) with \(\| u \|_\infty = 1\).
 Finally, to see that \(v^t W_V \neq \mathbf{0}\), assume to the contrary that
-\(v^t W_V = \mathbf{0}\).  Arguing as above, this implies that \(c^t c = 0\),
+\(v^t W_V = \mathbf{0}\).  Arguing as above, this implies that \(\| c \|^2_2 = 0\),
 which contradicts the fact that \(c \neq \mathbf{0}\).  For the "only if"
 direction, suppose that \(A W_V = \mathbf{0}\) and \(v = A^t u\) is a coupling
 vector.  Then \(v^t W_V = u^t A W_V = \mathbf{0}\), hence no coupling vector exists.
 \(\blacksquare\)
 
-*Lemma*: Fix a coupling vector \(v\). Then for each \(C > 0\)
+*Lemma*: If \(v\) is a coupling vector for \(\Att\), then for each \(C > 0\),
 there exist \(X, \tilde{X} \in \bR^{n \times d}\) such that
 \(\| \tilde{X} \|_\infty = 1\) and
 $$
@@ -123,25 +128,23 @@ $$
 $$
 
 *Proof*: By definition,
-\(v = A^t u \) with \(\| u \|_\infty = 1\).  Clearly, we can choose
-\(\tilde{X} \in \bR^{n \times d}\) such that \(\| \tilde{X} \|_\infty = 1\) and \(\tilde{X}^t e_i = u\),
-where \(e_i\) is the \(i\)th standard basis vector in \(\bR^n\).
-Now define
+\(v = A^t u \) with \(\| u \|_\infty = 1\).  For \(C > 0\), define
 $$
-    X = C e_j \frac{v^t}{\| v \|_2^2} \in \bR^{n \times d},
+    X = C e_i \frac{v^t}{\| v \|_2^2} \in \bR^{n \times d}
 $$
-where \(C > 0\) and \(i \neq j\) (note that such an index \(j\)
-exists since \(n > 1\)).  Since \(X^t e_i = \mathbf{0}\), we have
-\(P^t e_i = X A^t X^t e_i = \mathbf{0}\) and consequently the
-\(i\)th row of \(M(X, \tilde{X})\) is
+and choose any \(\tilde{X} \in \bR^{n \times d}\) such that \(\| \tilde{X} \|_\infty = 1\)
+and \(\tilde{X}^t e_j = u\), where \(i \neq j\) (note that such an index \(j\)
+exists since \(n > 1\)).  Since \(X^t e_j = \mathbf{0}\), we have
+\(P(X)^t e_j = X A^t X^t e_j = \mathbf{0}\) and consequently the
+\(j\)th row of \(M(X, \tilde{X})\) is
 $$
 \begin{align*}
-    M(X, \tilde{X})_i
+    M(X, \tilde{X})_j
     &= \left(
-        d \sigma(\mathbf{0}) \cdot (X A^t \tilde{X}^t + \tilde{X} A^t X^t) e_i
+        d \sigma(\mathbf{0}) \cdot (X A^t \tilde{X}^t + \tilde{X} A^t X^t) e_j
     \right)^t X W_V \\
     &= \left(
-        d \sigma(\mathbf{0}) \cdot X A^t \tilde{X}^t e_i
+        d \sigma(\mathbf{0}) \cdot X A^t \tilde{X}^t e_j
     \right)^t X W_V \\
     &= \left(
         d \sigma(\mathbf{0}) \cdot X A^t u
@@ -158,13 +161,13 @@ $$
         \left(
         \frac{1}{n} I_n - \frac{1}{n^2} \mathbf{1} \mathbf{1}^t
         \right)
-        C e_j \frac{v^t v}{\| v \|_2^2}
-        \right)^t C e_j \frac{v^t}{\| v \|_2^2} W_V \\
-    &= C^2 e_j^t
+        C e_i \frac{v^t v}{\| v \|_2^2}
+        \right)^t C e_i \frac{v^t}{\| v \|_2^2} W_V \\
+    &= C^2 e_i^t
         \left(
         \frac{1}{n} I_n - \frac{1}{n^2} \mathbf{1} \mathbf{1}^t
         \right)
-        e_j \frac{v^t}{\| v \|_2^2} W_V \\
+        e_i \frac{v^t}{\| v \|_2^2} W_V \\
     &= \frac{C^2}{\| v \|_2^2}
         \left(
         \frac{1}{n} - \frac{1}{n^2}
@@ -178,7 +181,7 @@ $$
 \begin{align*}
     \| M(X, \tilde{X}) \|_\infty
     &= \max_{1 \leq k \leq n} \| M(X, \tilde{X})_k \|_\infty \\
-    &\geq \| M(X, \tilde{X})_i \|_\infty \\
+    &\geq \| M(X, \tilde{X})_j \|_\infty \\
     &= \left\| \frac{C^2}{\| v \|_2^2} \left( \frac{1}{n} - \frac{1}{n^2} \right) v^t W_V \right\|_\infty \\
     &= \frac{C^2}{\| v \|_2^2} \left( \frac{1}{n} - \frac{1}{n^2} \right) \| v^t W_V \|_\infty.
 \end{align*}
@@ -223,16 +226,58 @@ $$
 $$
 Consequently, for each \(C > 0\), we have
 $$
+\begin{align*}
     \sup_{X \in \bR^{n \times d}} \| d \Att (X) \|_{\mathrm{op}}
-    \geq
+    &\geq
+    \sup_{X, \tilde{X} \in \bR^{n \times d}, \, \|\tilde{X}\|_\infty = 1} \| M(X, \tilde{X}) \|_\infty - \| W_V \|_\infty \\
+    &\geq
     \frac{C^2}{\| v \|_2^2} \left( \frac{1}{n} - \frac{1}{n^2} \right) \| v^t W_V \|_\infty - \| W_V \|_\infty.
+\end{align*}
 $$
 Since the right-hand side can be made arbitrarily large, \(\Att\) is not Lipschitz.
 \(\blacksquare\)
 
 ## Extension to multi-head attention
 
-TODO
+Suppose that we have scaled dot-product attention maps
+$$
+    \Att^i : \bR^{n \times d} \to \bR^{n \times d_V}, \quad 1 \leq i \leq h,
+$$
+where \(\Att^i\) has parameters \(W_Q^i, W_K^i\ \in \bR^{d \times d_K}\) and
+\(W_V^i \in \bR^{d \times d_V}\). We define
+$$
+    A^i = \frac{W_Q^i (W_K^i)^t}{\sqrt{d_K}}.
+$$
+The next definition uses an additional parameter \(W_O \in \bR^{h d_V \times h d_V}\).
+
+The *multi-head scaled dot-product self-attention map* is defined by
+$$
+\begin{align*}
+    \mathscr{M} : \bR^{n \times d} &\to \bR^{n \times h d_V} \\
+    X &\mapsto \mathscr{M} (X) =
+    [
+    \Att^1(X) \, \cdots \, \Att^h(X)
+    ] W_O
+\end{align*}
+$$
+
+*Theorem*: If \(W_O\) is invertible and \(A^i W_V^i \neq \mathbf{0}\) for
+some \(i\), then \(\mathscr{M}\) is not Lipschitz.
+
+*Proof*: Assume that \(\mathscr{M}\) has Lipschitz constant \(L\).
+One can show that
+$$
+\begin{align*}
+    L &\geq s_{\min}(W_O) L^i
+\end{align*}
+$$
+where \(s_{\min}(W_O) \neq 0\) is the minimum singular value of \(W_O\) and
+\(L^i\) is the Lipschitz constant of \(\Att^i\).
+Invoking Theorem 1, we conclude that \(\mathscr{M}\) is not Lipschitz.
+\(\blacksquare\)
+
+One can relax the assumption that \(W_O\) is invertible, but these
+relaxations significantly complicate the statement and proof of the theorem.
 
 ## References
 
@@ -240,3 +285,8 @@ TODO
 Proceedings of the 38th International Conference on Machine Learning, PMLR 139:5562-5571, 2021.
 2. *Attention is All you Need*, Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit,
 Llion Jones, Aidan N Gomez, Łukasz Kaiser, Illia Polosukhin. Advances in Neural Information Processing Systems 30, 2017.
+
+## TODO
+
+* Do we really need infinity-norm?  Can we redo with Frobenius everywhere?
+* Need to fix norms to talk about "The Lipschitz constant"
