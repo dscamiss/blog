@@ -241,7 +241,7 @@ $$
 Since the right-hand side is arbitrarily large, the supremum does not exist.
 \(\blacksquare\)
 
-## Extension to multi-head attention
+### Multi-head scaled dot-product attention is not Lipschitz
 
 Suppose that we have scaled dot-product attention maps
 $$
